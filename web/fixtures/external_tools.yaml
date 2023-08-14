@@ -241,3 +241,20 @@
     is_github_cloned: true
     github_clone_path: /usr/src/github/theHarvester
     subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 14
+  fields:
+    logo_url: null
+    name: puredns
+    description: Fast domain resolver and subdomain bruteforcing with accurate wildcard filtering.
+    github_url: https://github.com/d3mondev/puredns
+    license_url: https://github.com/d3mondev/puredns/blob/master/LICENSE
+    version_lookup_command: puredns -v
+    update_command: go install github.com/d3mondev/puredns/v2@latest
+    install_command: go install github.com/d3mondev/puredns/v2@latest
+    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
