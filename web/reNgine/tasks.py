@@ -630,22 +630,49 @@ def subdomain_scan(
 					os.system(
 						'rm -rf /usr/src/github/OneForAll/results/{}.*'.format(domain.name))
 
-			elif tool.lower() in custom_subdomain_tools:
-				# this is for all the custom tools, and tools runs based on instalaltion steps provided
-				if InstalledExternalTool.objects.filter(name__icontains=tool.lower()).exists():
-					custom_tool = InstalledExternalTool.objects.get(name__icontains=tool)
-					execution_command = custom_tool.subdomain_gathering_command
-					print(execution_command)
-					# replace syntax with actual commands and path
-					if '{TARGET}' in execution_command and '{OUTPUT}' in execution_command:
-						execution_command = execution_command.replace('{TARGET}', domain.name)
-						execution_command = execution_command.replace('{OUTPUT}', '{}/from_{}.txt'.format(results_dir, tool))
-						execution_command = execution_command.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in execution_command else execution_command
-						logger.info('Custom tool {} running with command {}'.format(tool, execution_command))
-						process = subprocess.Popen(execution_command.split())
-						process.wait()
-					else:
-						logger.error('Sorry can not run this tool! because TARGET and OUTPUT are not available!')
+				elif tool == 'puredns':
+					wordlist_path = '/usr/src/wordlist/all_txt_wordlist.txt'
+					if not os.path.exists(wordlist_path):
+						wordlist_path = '/usr/src/wordlist/deepmagic.com-prefixes-top50000.txt'
+
+					resolvers_path = '/usr/src/wordlist/resolvers.txt'
+
+					puredns_command = 'puredns bruteforce {} {} -r {} >> {}/from_puredns.txt'.format(wordlist_path, domain.name, resolvers_path, results_dir)
+
+					# Run puredns
+					logging.info(puredns_command)
+					process = subprocess.Popen(puredns_command.split())
+					process.wait()
+
+				elif tool.lower() in custom_subdomain_tools:
+					# this is for all the custom tools, and tools runs based on instalaltion steps provided
+					logging.info('RUNNING CUSTOM SUBDOMAIN TOOL')
+					if InstalledExternalTool.objects.filter(name__icontains=tool.lower()).exists():
+						custom_tool = InstalledExternalTool.objects.get(name__icontains=tool)
+						execution_command = custom_tool.subdomain_gathering_command
+						logging.info('CUSTOM SUBDOMAIN TOOL', execution_command)
+
+						# wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
+						# if wordlist == 'default':
+						# 	wordlist_path = '/usr/src/wordlist/deepmagic.com-prefixes-top50000.txt'
+						# else:
+						# 	wordlist_path = '/usr/src/wordlist/' + wordlist + '.txt'
+						# 	if not os.path.exists(wordlist_path):
+						# 		wordlist_path = '/usr/src/' + AMASS_WORDLIST
+
+						# replace syntax with actual commands and path
+						if '{TARGET}' in execution_command and '{OUTPUT}' in execution_command:
+							execution_command = execution_command.replace('{TARGET}', domain.name)
+							execution_command = execution_command.replace('{OUTPUT}', '{}/from_{}.txt'.format(results_dir, tool))
+							execution_command = execution_command.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in execution_command else execution_command
+							# execution_command = execution_command.replace('{WORDLIST}', wordlist_path) if '{WORDLIST}' in execution_command else execution_command
+							logger.info('Custom tool {} running with command {}'.format(tool, execution_command))
+							process = subprocess.Popen(execution_command.split())
+							process.wait()
+						else:
+							logger.error('Sorry can not run this tool! because TARGET and OUTPUT are not available!')
+				else:
+					logging.info('SUBDOMAIN TOOL NOT FOUND!!!')
 	except Exception as e:
 		logger.error(e)
 
