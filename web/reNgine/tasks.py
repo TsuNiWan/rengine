@@ -637,7 +637,7 @@ def subdomain_scan(
 
 					resolvers_path = '/usr/src/wordlist/resolvers.txt'
 
-					puredns_command = 'puredns bruteforce {} {} -r {} --write {}/from_puredns.txt'.format(wordlist_path, domain.name, resolvers_path, results_dir)
+					puredns_command = 'puredns bruteforce {} {} -r {} --write {}/from_puredns.txt --skip-validation'.format(wordlist_path, domain.name, resolvers_path, results_dir)
 
 					# Run puredns
 					logging.info(puredns_command)
