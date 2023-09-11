@@ -644,6 +644,16 @@ def subdomain_scan(
 					process = subprocess.Popen(puredns_command.split())
 					process.wait()
 
+				elif tool == 'findomain':
+					findomain_command = 'findomain -t {} -r -u {}/from_findomain.txt'.format(
+						domain.name, results_dir)
+
+					# Run findomain
+					logging.info(findomain_command)
+					process = subprocess.Popen(findomain_command.split())
+					process.wait()
+
+
 				elif tool.lower() in custom_subdomain_tools:
 					# this is for all the custom tools, and tools runs based on instalaltion steps provided
 					logging.info('RUNNING CUSTOM SUBDOMAIN TOOL')

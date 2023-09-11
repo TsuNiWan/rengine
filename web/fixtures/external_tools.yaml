@@ -275,3 +275,20 @@
     is_github_cloned: false
     github_clone_path: null
     subdomain_gathering_command: null
+  - model: scanEngine.installedexternaltool
+  pk: 16
+  fields:
+    logo_url: https://raw.githubusercontent.com/Findomain/Findomain/master/images/findomain.png
+    name: Findomain
+    description: The complete solution for domain recognition. Supports screenshotting, port scanning, importing data from other tools, subdomain monitoring, and more. Be alerted on your findings through services such as Discord, Slack, and Telegram. Multiple API Keys for sources and much more.
+    github_url: https://github.com/Findomain/Findomain
+    license_url: https://github.com/Findomain/Findomain/blob/master/LICENSE
+    version_lookup_command: findomain -V
+    update_command: 
+    install_command: 
+    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null

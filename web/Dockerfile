@@ -38,7 +38,9 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \
     geoip-bin \
-    geoip-database
+    geoip-database \
+    curl \
+    unzip
 
 
 # Download and install go 1.20
@@ -99,6 +101,13 @@ RUN GO111MODULE=on go install github.com/d3mondev/puredns/v2@latest
 
 # install katana
 RUN GO111MODULE=on go install github.com/projectdiscovery/katana/cmd/katana@latest
+
+# Download and install findomain
+RUN curl -LO https://github.com/findomain/findomain/releases/latest/download/findomain-linux-i386.zip
+RUN unzip findomain-linux-i386.zip
+RUN chmod +x findomain
+RUN rm findomain-linux-i386.zip
+RUN mv findomain /usr/bin/findomain
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update
