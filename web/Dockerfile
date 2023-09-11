@@ -89,13 +89,16 @@ RUN GO111MODULE=on go install -v github.com/projectdiscovery/subfinder/v2/cmd/su
 RUN GO111MODULE=on go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
 RUN GO111MODULE=on go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
 
-# Install massdns
+# install massdns
 RUN git clone https://github.com/blechschmidt/massdns.git && \
     cd massdns && \
     make && \
     make install
 
 RUN GO111MODULE=on go install github.com/d3mondev/puredns/v2@latest
+
+# install katana
+RUN GO111MODULE=on go install github.com/projectdiscovery/katana/cmd/katana@latest
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update

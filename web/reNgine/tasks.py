@@ -1468,7 +1468,7 @@ def fetch_endpoints(
 
 	# check yaml settings
 	if ALL in yaml_configuration[FETCH_URL][USES_TOOLS]:
-		tools = 'gauplus hakrawler waybackurls gospider'
+		tools = 'gauplus hakrawler waybackurls gospider katana'
 	else:
 		tools = ' '.join(
 			str(tool) for tool in yaml_configuration[FETCH_URL][USES_TOOLS])
@@ -1484,7 +1484,7 @@ def fetch_endpoints(
 	sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
 
 	for tool in tools.split(' '):
-		if tool == 'gauplus' or tool == 'hakrawler' or tool == 'waybackurls':
+		if tool == 'gauplus' or tool == 'hakrawler' or tool == 'waybackurls' or tool == 'katana':
 			if subdomain:
 				subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
 				input_target = 'echo {}'.format(subdomain_url)
@@ -1539,6 +1539,16 @@ def fetch_endpoints(
 			)
 			logger.info(gospider_command)
 			os.system(gospider_command)
+		elif tool == 'katana':
+			logger.info('Running katana')
+			katana_command = '{} | katana | grep -Eo {} > {}/urls_katana.txt'.format(
+				input_target,
+				valid_url_of_domain_regex,
+				results_dir
+			)
+
+			logger.info(katana_command)
+			os.system(katana_command)
 
 	# run cleanup of urls
 	os.system('cat {0}/urls* > {0}/final_urls.txt'.format(results_dir))
