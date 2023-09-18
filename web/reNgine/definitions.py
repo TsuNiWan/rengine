@@ -21,10 +21,11 @@ ALL = 'all'
 AMASS_WORDLIST = 'amass_wordlist'
 AUTO_CALIBRATION = 'auto_calibration'
 CUSTOM_HEADER = 'custom_header'
+FETCH_GPT_REPORT = 'fetch_gpt_report'
 DIR_FILE_FUZZ = 'dir_file_fuzz'
 FOLLOW_REDIRECT = 'follow_redirect'
 EXTENSIONS = 'extensions'
-EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
+EXCLUDED_SUBDOMAINS = 'exclude_subdomains'
 EXCLUDE_EXTENSIONS = 'exclude_extensions'
 EXCLUDE_TEXT = 'exclude_text'
 FETCH_URL = 'fetch_url'
@@ -75,10 +76,14 @@ WORDLIST = 'wordlist'
 REMOVE_DUPLICATE_ENDPOINTS = 'remove_duplicate_endpoints'
 DUPLICATE_REMOVAL_FIELDS = 'duplicate_fields'
 DALFOX = 'dalfox'
+S3SCANNER = 's3scanner'
+NUCLEI = 'nuclei'
+CRLFUZZ = 'crlfuzz'
 WAF_EVASION = 'waf_evasion'
 BLIND_XSS_SERVER = 'blind_xss_server'
 USER_AGENT = 'blind_xss_server'
 DELAY = 'delay'
+PROVIDERS = 'providers'
 
 ###############################################################################
 # Scan DEFAULTS
@@ -137,6 +142,9 @@ NUCLEI_SEVERITY_MAP = {
 }
 NUCLEI_REVERSE_SEVERITY_MAP = {v: k for k, v in NUCLEI_SEVERITY_MAP.items()}
 NUCLEI_DEFAULT_SEVERITIES = list(NUCLEI_SEVERITY_MAP.keys())
+
+# s3scanner
+S3SCANNER_DEFAULT_PROVIDERS = ['gcp', 'aws', 'digitalocean', 'dreamhost', 'linode']
 
 # dalfox
 DALFOX_SEVERITY_MAP = {
@@ -385,6 +393,7 @@ DEFAULT_GF_PATTERNS = [
 
 # Default Dir File Fuzz Params
 DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
+    'html',
     'php',
     'git',
     'yaml',
@@ -443,4 +452,22 @@ VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
         Include any references URL about this vulnerability, any existing CVE ID, or news articles etc. Separate each new references by - and a new line \n. Only include http urls
 
     Do not write 'Penetration Testing Report:' on the title.
+"""
+
+
+ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
+    You are a highly skilled penetration tester who has recently completed a reconnaissance on a target.
+    As a penetration tester, I've conducted a thorough reconnaissance on a specific subdomain.
+    Based on my reconnaissance you will be given with a
+        - Subdomain Name
+        - Subdomain Page Title
+        - Open Ports if any detected
+        - HTTP Status
+        - Technologies Detected
+        - Content Type
+        - Web Server
+        - Page Content Length
+    I'm seeking insights into potential technical web application attacks that could be executed on this subdomain, along with explanations for why these attacks are feasible given the discovered information.
+    Please provide a detailed list of these attack types and their underlying technical rationales on every attacks you suggested.
+    Also suggest if any CVE ID, known exploits, existing vulnerabilities, any news articles URL related to the information provided to you.
 """

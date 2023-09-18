@@ -9,6 +9,7 @@ import whatportis
 import xmltodict
 import yaml
 import tldextract
+import concurrent.futures
 
 from datetime import datetime
 from urllib.parse import urlparse
@@ -22,9 +23,9 @@ from dotted_dict import DottedDict
 from django.utils import timezone
 from pycvesearch import CVESearch
 from metafinder.extractor import extract_metadata_from_google_search
-from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing, get_emails_from_google)
 
 from reNgine.celery import app
+from reNgine.gpt import GPTVulnerabilityReportGenerator
 from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
 from reNgine.definitions import *
@@ -47,7 +48,7 @@ logger = get_task_logger(__name__)
 #----------------------#
 
 
-@app.task
+@app.task(name='initiate_scan', bind=False, queue='initiate_scan_queue')
 def initiate_scan(
 		scan_history_id,
 		domain_id,
@@ -159,7 +160,7 @@ def initiate_scan(
 		subdomain.page_title = endpoint.page_title
 		subdomain.content_type = endpoint.content_type
 		subdomain.content_length = endpoint.content_length
-		for tech in endpoint.technologies.all():
+		for tech in endpoint.techs.all():
 			subdomain.technologies.add(tech)
 		subdomain.save()
 
@@ -178,6 +179,7 @@ def initiate_scan(
 		port_scan.si(ctx=ctx, description='Port scan'),
 		fetch_url.si(ctx=ctx, description='Fetch URL'),
 		group(
+			s3scanner.si(ctx=ctx, description='S3 Buckets Scanner'),
 			dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
 			vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
 			dalfox_xss_scan.si(ctx=ctx, description='Dalfox XSS scan'),
@@ -202,7 +204,7 @@ def initiate_scan(
 	}
 
 
-@app.task
+@app.task(name='initiate_subscan', bind=False, queue='subscan_queue')
 def initiate_subscan(
 		scan_history_id,
 		subdomain_id,
@@ -295,7 +297,7 @@ def initiate_subscan(
 		subdomain.page_title = endpoint.page_title
 		subdomain.content_type = endpoint.content_type
 		subdomain.content_length = endpoint.content_length
-		for tech in endpoint.technologies.all():
+		for tech in endpoint.techs.all():
 			subdomain.technologies.add(tech)
 		subdomain.save()
 
@@ -314,7 +316,7 @@ def initiate_subscan(
 	}
 
 
-@app.task
+@app.task(name='report', bind=False, queue='report_queue')
 def report(ctx={}, description=None):
 	"""Report task running after all other tasks.
 	Mark ScanHistory or SubScan object as completed and update with final
@@ -363,7 +365,7 @@ def report(ctx={}, description=None):
 # Tracked reNgine tasks    #
 #--------------------------#
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='subdomain_discovery', queue='main_scan_queue', base=RengineTask, bind=True)
 def subdomain_discovery(
 		self,
 		host=None,
@@ -411,9 +413,8 @@ def subdomain_discovery(
 	# Run tools
 	for tool in tools:
 		cmd = None
-		logger.info(f'Scanning subdomains with {tool}')
+		logger.info(f'Scanning subdomains for {host} with {tool}')
 		proxy = get_random_proxy()
-
 		if tool in default_subdomain_tools:
 			if tool == 'amass-passive':
 				cmd = f'amass enum -passive -d {host} -o {self.results_dir}/subdomains_amass.txt'
@@ -577,7 +578,7 @@ def subdomain_discovery(
 	return SubdomainSerializer(subdomains, many=True).data
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='osint', queue='main_scan_queue', base=RengineTask, bind=True)
 def osint(self, host=None, ctx={}, description=None):
 	"""Run Open-Source Intelligence tools on selected domain.
 
@@ -594,9 +595,9 @@ def osint(self, host=None, ctx={}, description=None):
 		ctx['track'] = False
 		results = osint_discovery(host=host, ctx=ctx)
 
-	if 'dork' in config:
-		ctx['track'] = False
-		results['dorks'] = dorking(host=host, ctx=ctx)
+	# if 'dork' in config:
+	# 	ctx['track'] = False
+	# 	results['dorks'] = dorking(host=host, ctx=ctx)
 
 	with open(self.output_path, 'w') as f:
 		json.dump(results, f, indent=4)
@@ -604,7 +605,7 @@ def osint(self, host=None, ctx={}, description=None):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='osint_discovery', queue='main_scan_queue', base=RengineTask, bind=True)
 def osint_discovery(self, host=None, ctx={}):
 	"""Run OSInt discovery.
 
@@ -648,13 +649,9 @@ def osint_discovery(self, host=None, ctx={}):
 				meta_info.append(save_metadata_info(meta_dict))
 
 	if 'emails' in osint_lookup:
-		emails = get_and_save_emails(self.scan, self.results_dir)
+		emails = get_and_save_emails(self.scan, self.activity_id, self.results_dir)
 		emails_str = '\n'.join([f'• `{email}`' for email in emails])
 		self.notify(fields={'Emails': emails_str})
-		for email in emails:
-			email, created = save_email(email, scan_history=self.scan)
-			if created:
-				logger.warning(f'Found new email address {email}')
 		ctx['track'] = False
 		creds = h8mail(ctx=ctx)
 
@@ -668,7 +665,7 @@ def osint_discovery(self, host=None, ctx={}):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='dorking', queue='main_scan_queue', base=RengineTask, bind=True)
 def dorking(self, host=None, ctx={}):
 	"""Run Google dorks.
 
@@ -960,7 +957,7 @@ def dorking(self, host=None, ctx={}):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='theHarvester', queue='main_scan_queue', base=RengineTask, bind=True)
 def theHarvester(self, host=None, ctx={}):
 	"""Run theHarvester to get save emails, hosts, employees found in domain.
 
@@ -1075,7 +1072,7 @@ def theHarvester(self, host=None, ctx={}):
 	return data
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='h8mail', queue='main_scan_queue', base=RengineTask, bind=True)
 def h8mail(self, input_path=None, ctx={}):
 	"""Run h8mail.
 
@@ -1115,7 +1112,7 @@ def h8mail(self, input_path=None, ctx={}):
 	return creds
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='screenshot', queue='main_scan_queue', base=RengineTask, bind=True)
 def screenshot(self, ctx={}, description=None):
 	"""Uses EyeWitness to gather screenshot of a domain and/or url.
 
@@ -1207,7 +1204,7 @@ def screenshot(self, ctx={}, description=None):
 			send_file_to_discord.delay(path, title)
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='port_scan', queue='main_scan_queue', base=RengineTask, bind=True)
 def port_scan(self, hosts=[], ctx={}, description=None):
 	"""Run port scan.
 
@@ -1224,7 +1221,6 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	# Config
 	config = self.yaml_configuration.get(PORT_SCAN) or {}
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
-	intensity = config.get(INTENSITY) or self.yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	exclude_ports = config.get(NAABU_EXCLUDE_PORTS, [])
 	exclude_subdomains = config.get(NAABU_EXCLUDE_SUBDOMAINS, False)
@@ -1382,7 +1378,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	return ports_data
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='nmap', queue='main_scan_queue', base=RengineTask, bind=True)
 def nmap(
 		self,
 		cmd=None,
@@ -1467,7 +1463,7 @@ def nmap(
 	return vulns
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='waf_detection', queue='main_scan_queue', base=RengineTask, bind=True)
 def waf_detection(self, ctx={}, description=None):
 	"""
 	Uses wafw00f to check for the presence of a WAF.
@@ -1528,7 +1524,7 @@ def waf_detection(self, ctx={}, description=None):
 	return wafs
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='dir_file_fuzz', queue='main_scan_queue', base=RengineTask, bind=True)
 def dir_file_fuzz(self, ctx={}, description=None):
 	"""Perform directory scan, and currently uses `ffuf` as a default tool.
 
@@ -1544,7 +1540,6 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
 	auto_calibration = config.get(AUTO_CALIBRATION, True)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
-	intensity = config.get(INTENSITY) or self.yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	extensions = config.get(EXTENSIONS, DEFAULT_DIR_FILE_FUZZ_EXTENSIONS)
 	extensions_str = ','.join(map(str, extensions))
@@ -1657,8 +1652,8 @@ def dir_file_fuzz(self, ctx={}, description=None):
 				url=url)
 			dfile.http_status = status
 			dfile.save()
-			if created:
-				logger.warning(f'Found new directory or file {url}')
+			# if created:
+			# 	logger.warning(f'Found new directory or file {url}')
 			dirscan.directory_files.add(dfile)
 			dirscan.save()
 
@@ -1678,7 +1673,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='fetch_url', queue='main_scan_queue', base=RengineTask, bind=True)
 def fetch_url(self, urls=[], ctx={}, description=None):
 	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
@@ -1700,7 +1695,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	domain_request_headers = self.domain.request_headers if self.domain else None
 	custom_header = domain_request_headers or self.yaml_configuration.get(CUSTOM_HEADER)
-	exclude_subdomains = config.get('exclude_subdomains', False)
+	exclude_subdomains = config.get(EXCLUDED_SUBDOMAINS, False)
 
 	# Get URLs to scan and save to input file
 	if urls:
@@ -1889,6 +1884,8 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 				crawl=False,
 				subdomain=subdomain,
 				ctx=ctx)
+			if not endpoint:
+				continue
 			earlier_pattern = None
 			if not created:
 				earlier_pattern = endpoint.matched_gf_patterns
@@ -1915,7 +1912,7 @@ def parse_curl_output(response):
 	}
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='vulnerability_scan', queue='main_scan_queue', base=RengineTask, bind=True)
 def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	"""HTTP vulnerability scan using `nuclei`.
 
@@ -1927,6 +1924,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	Unfurl the urls to keep only domain and path, will be sent to vuln scan and
 	ignore certain file extensions. Thanks: https://github.com/six2dez/reconftw
 	"""
+	return
 	# Config
 	config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	input_path = f'{self.results_dir}/input_endpoints_vulnerability_scan.txt'
@@ -1937,6 +1935,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	retries = config.get(RETRIES) or self.yaml_configuration.get(RETRIES, DEFAULT_RETRIES)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	custom_header = config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	should_fetch_gpt_report = config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	tags = config.get(NUCLEI_TAGS, [])
 	tags = ','.join(tags)
 	nuclei_templates = config.get(NUCLEI_TEMPLATE)
@@ -1944,7 +1943,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	proxy = get_random_proxy()
 	use_nuclei_conf = config.get(USE_NUCLEI_CONFIG, False)
 	severities = config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
-	severities_str = ','.join(severities)
+	# severities_str = ','.join(severities)
 
 	# Get alive endpoints
 	if urls:
@@ -1961,7 +1960,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	if intensity == 'normal': # reduce number of endpoints to scan
 		unfurl_filter = f'{self.results_dir}/urls_unfurled.txt'
 		run_command(
-			f'cat {input_path} | unfurl -u format %s://%d%p > {unfurl_filter}',
+			f"cat {input_path} | unfurl -u format %s://%d%p |uro > {unfurl_filter}",
 			shell=True,
 			history_file=self.history_file,
 			scan_id=self.scan_id,
@@ -1973,10 +1972,6 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			scan_id=self.scan_id,
 			activity_id=self.activity_id)
 		input_path = unfurl_filter
-
-	# Send start notification
-	notif = Notification.objects.first()
-	send_status = notif.send_scan_status_notif if notif else False
 
 	# Build templates
 	# logger.info('Updating Nuclei templates ...')
@@ -2011,15 +2006,53 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' -proxy {proxy} ' if proxy else ''
 	cmd += f' -retries {retries}' if retries > 0 else ''
 	cmd += f' -rl {rate_limit}' if rate_limit > 0 else ''
-	cmd += f' -severity {severities_str}'
+	# cmd += f' -severity {severities_str}'
 	cmd += f' -timeout {str(timeout)}' if timeout and timeout > 0 else ''
 	cmd += f' -tags {tags}' if tags else ''
 	cmd += f' -silent'
 	for tpl in templates:
 		cmd += f' -t {tpl}'
 
-	# Run cmd
+
+	grouped_tasks = []
+	custom_ctx = ctx
+	for severity in severities:
+		custom_ctx['track'] = False
+		_task = vulnerability_scan_module.si(
+			cmd,
+			severity,
+			enable_http_crawl,
+			should_fetch_gpt_report,
+			ctx=custom_ctx,
+			description=f'Vulnerability Scan with severity {severity}'
+		)
+		grouped_tasks.append(_task)
+
+	celery_group = group(grouped_tasks)
+	job = celery_group.apply_async()
+
+	while not job.ready():
+		# wait for all jobs to complete
+		time.sleep(5)
+
+	logger.info('Vulnerability scan with all severities completed...')
+
+	# return results
+	return None
+
+@app.task(name='vulnerability_scan_module', queue='main_scan_queue', base=RengineTask, bind=True)
+def vulnerability_scan_module(self, cmd, severity, enable_http_crawl, should_fetch_gpt_report, ctx={}, description=None):
+	'''
+		This celery task is supposed to run vulnerability scan in parallel.
+		All severities supplied should run in parallel.
+	'''
 	results = []
+	logger.info(f'Running vulnerability scan with severity: {severity}')
+	cmd += f' -severity {severity}'
+	# Send start notification
+	notif = Notification.objects.first()
+	send_status = notif.send_scan_status_notif if notif else False
+
 	for line in stream_command(
 			cmd,
 			history_file=self.history_file,
@@ -2074,6 +2107,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		# Print vuln
 		severity = line['info'].get('severity', 'unknown')
 		logger.warning(str(vuln))
+
 
 		# Send notification for all vulnerabilities except info
 		url = vuln.http_url or vuln.subdomain
@@ -2149,11 +2183,104 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		}
 		self.notify(fields=fields)
 
-	# return results
-	return None
+	# after vulnerability scan is done, we need to run gpt if
+	# should_fetch_gpt_report and openapi key exists
+
+	if should_fetch_gpt_report and OpenAiAPIKey.objects.all().first():
+		logger.info('Getting Vulnerability GPT Report')
+		vulns = Vulnerability.objects.filter(
+			scan_history__id=self.scan_id
+		).filter(
+			source=NUCLEI
+		).exclude(
+			severity=0
+		)
+		# find all unique vulnerabilities based on path and title
+		# all unique vulnerability will go thru gpt function and get report
+		# once report is got, it will be matched with other vulnerabilities and saved
+		unique_vulns = set()
+		for vuln in vulns:
+			unique_vulns.add((vuln.name, vuln.get_path()))
+
+		unique_vulns = list(unique_vulns)
+
+		with concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_THREADS) as executor:
+			future_to_gpt = {executor.submit(get_vulnerability_gpt_report, vuln): vuln for vuln in unique_vulns}
+
+			# Wait for all tasks to complete
+			for future in concurrent.futures.as_completed(future_to_gpt):
+				gpt = future_to_gpt[future]
+				try:
+					future.result()
+				except Exception as e:
+					logger.error(f"Exception for Vulnerability {vuln}: {e}")
+
+		return None
 
 
-@app.task(base=RengineTask, bind=True)
+def get_vulnerability_gpt_report(vuln):
+	title = vuln[0]
+	path = vuln[1]
+	logger.info(f'Getting GPT Report for {title}, PATH: {path}')
+	# check if in db already exists
+	stored = GPTVulnerabilityReport.objects.filter(
+		url_path=path
+	).filter(
+		title=title
+	).first()
+	if stored:
+		response = {
+			'description': stored.description,
+			'impact': stored.impact,
+			'remediation': stored.remediation,
+			'references': [url.url for url in stored.references.all()]
+		}
+	else:
+		report = GPTVulnerabilityReportGenerator()
+		vulnerability_description = get_gpt_vuln_input_description(
+			title,
+			path
+		)
+		response = report.get_vulnerability_description(vulnerability_description)
+		add_gpt_description_db(
+			title,
+			path,
+			response.get('description'),
+			response.get('impact'),
+			response.get('remediation'),
+			response.get('references', [])
+		)
+
+
+	for vuln in Vulnerability.objects.filter(name=title, http_url__icontains=path):
+		vuln.description = response.get('description', vuln.description)
+		vuln.impact = response.get('impact')
+		vuln.remediation = response.get('remediation')
+		vuln.is_gpt_used = True
+		vuln.save()
+
+		for url in response.get('references', []):
+			ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+			vuln.references.add(ref)
+			vuln.save()
+
+
+def add_gpt_description_db(title, path, description, impact, remediation, references):
+	gpt_report = GPTVulnerabilityReport()
+	gpt_report.url_path = path
+	gpt_report.title = title
+	gpt_report.description = description
+	gpt_report.impact = impact
+	gpt_report.remediation = remediation
+	gpt_report.save()
+
+	for url in references:
+		ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+		gpt_report.references.add(ref)
+		gpt_report.save()
+
+
+@app.task(name='dalfox_xss_scan', queue='main_scan_queue', base=RengineTask, bind=True)
 def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	"""XSS Scan using dalfox
 
@@ -2162,6 +2289,7 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 		description (str, optional): Task description shown in UI.
 	"""
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
+	should_fetch_gpt_report = vuln_config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	dalfox_config = vuln_config.get(DALFOX) or {}
 	custom_header = dalfox_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
 	proxy = get_random_proxy()
@@ -2247,10 +2375,38 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 
 		if not vuln:
 			continue
+
+	# after vulnerability scan is done, we need to run gpt if
+	# should_fetch_gpt_report and openapi key exists
+
+	if should_fetch_gpt_report and OpenAiAPIKey.objects.all().first():
+		logger.info('Getting Dalfox Vulnerability GPT Report')
+		vulns = Vulnerability.objects.filter(
+			scan_history__id=self.scan_id
+		).filter(
+			source=DALFOX
+		).exclude(
+			severity=0
+		)
+
+		_vulns = []
+		for vuln in vulns:
+			_vulns.append((vuln.name, vuln.http_url))
+
+		with concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_THREADS) as executor:
+			future_to_gpt = {executor.submit(get_vulnerability_gpt_report, vuln): vuln for vuln in _vulns}
+
+			# Wait for all tasks to complete
+			for future in concurrent.futures.as_completed(future_to_gpt):
+				gpt = future_to_gpt[future]
+				try:
+					future.result()
+				except Exception as e:
+					logger.error(f"Exception for Vulnerability {vuln}: {e}")
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='crlfuzz', queue='main_scan_queue', base=RengineTask, bind=True)
 def crlfuzz(self, urls=[], ctx={}, description=None):
 	"""CRLF Fuzzing with CRLFuzz
 
@@ -2259,6 +2415,7 @@ def crlfuzz(self, urls=[], ctx={}, description=None):
 		description (str, optional): Task description shown in UI.
 	"""
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
+	should_fetch_gpt_report = vuln_config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	custom_header = vuln_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
 	proxy = get_random_proxy()
 	user_agent = vuln_config.get(USER_AGENT) or self.yaml_configuration.get(USER_AGENT)
@@ -2338,10 +2495,71 @@ def crlfuzz(self, urls=[], ctx={}, description=None):
 
 		if not vuln:
 			continue
+
+	# after vulnerability scan is done, we need to run gpt if
+	# should_fetch_gpt_report and openapi key exists
+
+	if should_fetch_gpt_report and OpenAiAPIKey.objects.all().first():
+		logger.info('Getting CRLFuzz Vulnerability GPT Report')
+		vulns = Vulnerability.objects.filter(
+			scan_history__id=self.scan_id
+		).filter(
+			source=CRLFUZZ
+		).exclude(
+			severity=0
+		)
+
+		_vulns = []
+		for vuln in vulns:
+			_vulns.append((vuln.name, vuln.http_url))
+
+		with concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_THREADS) as executor:
+			future_to_gpt = {executor.submit(get_vulnerability_gpt_report, vuln): vuln for vuln in _vulns}
+
+			# Wait for all tasks to complete
+			for future in concurrent.futures.as_completed(future_to_gpt):
+				gpt = future_to_gpt[future]
+				try:
+					future.result()
+				except Exception as e:
+					logger.error(f"Exception for Vulnerability {vuln}: {e}")
+
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='s3scanner', queue='main_scan_queue', base=RengineTask, bind=True)
+def s3scanner(self, ctx={}, description=None):
+	"""Bucket Scanner
+
+	Args:
+		ctx (dict): Context
+		description (str, optional): Task description shown in UI.
+	"""
+	input_path = f'{self.results_dir}/#{self.scan_id}_subdomain_discovery.txt'
+	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
+	s3_config = vuln_config.get(S3SCANNER) or {}
+	threads = s3_config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
+	providers = s3_config.get(PROVIDERS, S3SCANNER_DEFAULT_PROVIDERS)
+	scan_history = ScanHistory.objects.filter(pk=self.scan_id).first()
+	for provider in providers:
+		cmd = f's3scanner -bucket-file {input_path} -enumerate -provider {provider} -threads {threads} -json'
+		for line in stream_command(
+				cmd,
+				history_file=self.history_file,
+				scan_id=self.scan_id,
+				activity_id=self.activity_id):
+
+			if not isinstance(line, dict):
+				continue
+
+			if line['bucket']['exists'] == 1:
+				result = parse_s3scanner_result(line)
+				s3bucket, created = S3Bucket.objects.get_or_create(**result)
+				scan_history.buckets.add(s3bucket)
+				logger.info(f"s3 bucket added {result['provider']}-{result['name']}-{result['region']}")
+
+
+@app.task(name='http_crawl', queue='main_scan_queue', base=RengineTask, bind=True)
 def http_crawl(
 		self,
 		urls=[],
@@ -2454,6 +2672,9 @@ def http_crawl(
 		subdomain_name = get_subdomain_from_url(http_url)
 		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
 
+		if not subdomain:
+			continue
+
 		# Save default HTTP URL to endpoint object in DB
 		endpoint, created = save_endpoint(
 			http_url,
@@ -2489,7 +2710,7 @@ def http_crawl(
 		# Add technology objects to DB
 		for technology in techs:
 			tech, _ = Technology.objects.get_or_create(name=technology)
-			endpoint.technologies.add(tech)
+			endpoint.techs.add(tech)
 			if is_ran_from_subdomain_scan:
 				subdomain.technologies.add(tech)
 				subdomain.save()
@@ -2565,7 +2786,7 @@ def http_crawl(
 # Notifications tasks #
 #---------------------#
 
-@app.task
+@app.task(name='send_notif', bind=False, queue='send_notif_queue')
 def send_notif(
 		message,
 		scan_history_id=None,
@@ -2578,7 +2799,7 @@ def send_notif(
 	send_telegram_message(message)
 
 
-@app.task
+@app.task(name='send_scan_notif', bind=False, queue='send_scan_notif_queue')
 def send_scan_notif(
 		scan_history_id,
 		subscan_id=None,
@@ -2629,7 +2850,7 @@ def send_scan_notif(
 		**opts)
 
 
-@app.task
+@app.task(name='send_task_notif', bind=False, queue='send_task_notif_queue')
 def send_task_notif(
 		task_name,
 		status=None,
@@ -2723,7 +2944,7 @@ def send_task_notif(
 		**opts)
 
 
-@app.task
+@app.task(name='send_file_to_discord', bind=False, queue='send_file_to_discord_queue')
 def send_file_to_discord(file_path, title=None):
 	notif = Notification.objects.first()
 	do_send = notif and notif.send_to_discord and notif.discord_hook_url
@@ -2741,7 +2962,7 @@ def send_file_to_discord(file_path, title=None):
 	webhook.execute()
 
 
-@app.task
+@app.task(name='send_hackerone_report', bind=False, queue='send_hackerone_report_queue')
 def send_hackerone_report(vulnerability_id):
 	"""Send HackerOne vulnerability report.
 
@@ -2812,7 +3033,7 @@ def send_hackerone_report(vulnerability_id):
 #-------------#
 
 
-@app.task
+@app.task(name='parse_nmap_results', bind=False, queue='parse_nmap_results_queue')
 def parse_nmap_results(xml_file, output_file=None):
 	"""Parse results from nmap output file.
 
@@ -3056,6 +3277,32 @@ def cve_to_vuln(cve_id, vuln_type=''):
 	return vuln
 
 
+def parse_s3scanner_result(line):
+	'''
+		Parses and returns s3Scanner Data
+	'''
+	bucket = line['bucket']
+	return {
+		'name': bucket['name'],
+		'region': bucket['region'],
+		'provider': bucket['provider'],
+		'owner_display_name': bucket['owner_display_name'],
+		'owner_id': bucket['owner_id'],
+		'perm_auth_users_read': bucket['perm_auth_users_read'],
+		'perm_auth_users_write': bucket['perm_auth_users_write'],
+		'perm_auth_users_read_acl': bucket['perm_auth_users_read_acl'],
+		'perm_auth_users_write_acl': bucket['perm_auth_users_write_acl'],
+		'perm_auth_users_full_control': bucket['perm_auth_users_full_control'],
+		'perm_all_users_read': bucket['perm_all_users_read'],
+		'perm_all_users_write': bucket['perm_all_users_write'],
+		'perm_all_users_read_acl': bucket['perm_all_users_read_acl'],
+		'perm_all_users_write_acl': bucket['perm_all_users_write_acl'],
+		'perm_all_users_full_control': bucket['perm_all_users_full_control'],
+		'num_objects': bucket['num_objects'],
+		'size': bucket['bucket_size']
+	}
+
+
 def parse_nuclei_result(line):
 	"""Parse results from nuclei JSON output.
 
@@ -3084,7 +3331,7 @@ def parse_nuclei_result(line):
 		'cwe_ids': line['info'].get('classification', {}).get('cwe_id', []) or [],
 		'references': line['info'].get('reference', []) or [],
 		'tags': line['info'].get('tags', []),
-		'source': 'nuclei',
+		'source': NUCLEI,
 	}
 
 
@@ -3109,7 +3356,7 @@ def parse_dalfox_result(line):
 		'type': 'XSS',
 		'severity': DALFOX_SEVERITY_MAP[line.get('severity', 'unknown')],
 		'description': description,
-		'source': 'Dalfox',
+		'source': DALFOX,
 		'cwe_ids': [line.get('cwe')]
 	}
 
@@ -3128,12 +3375,12 @@ def parse_crlfuzz_result(url):
 		'name': 'CRLF (HTTP Response Splitting)',
 		'type': 'CRLF',
 		'severity': 2,
-		'description': '',
-		'source': 'CRLFUZZ',
+		'description': 'A CRLF (HTTP Response Splitting) vulnerability has been discovered.',
+		'source': CRLFUZZ,
 	}
 
 
-@app.task
+@app.task(name='geo_localize', bind=False, queue='geo_localize_queue')
 def geo_localize(host, ip_id=None):
 	"""Uses geoiplookup to find location associated with host.
 
@@ -3168,7 +3415,8 @@ def geo_localize(host, ip_id=None):
 	logger.info(f'Geo IP lookup failed for host "{host}"')
 	return None
 
-@app.task
+
+@app.task(name='query_whois', bind=False, queue='query_whois_queue')
 def query_whois(ip_domain, force_reload_whois=False):
 	"""Query WHOIS information for an IP or a domain name.
 
@@ -3595,7 +3843,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 	}
 
 
-@app.task
+@app.task(name='remove_duplicate_endpoints', bind=False, queue='remove_duplicate_endpoints_queue')
 def remove_duplicate_endpoints(
 		scan_history_id,
 		domain_id,
@@ -3659,7 +3907,7 @@ def remove_duplicate_endpoints(
 				logger.warning(msg)
 
 
-@app.task
+@app.task(name='run_command', bind=False, queue='run_command_queue')
 def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, activity_id=None):
 	"""Run a given command using subprocess module.
 
@@ -3854,11 +4102,12 @@ def get_and_save_dork_results(dork, type, host=None, scan_history=None, in_targe
 	return results
 
 
-def get_and_save_emails(scan_history, results_dir):
+def get_and_save_emails(scan_history, activity_id, results_dir):
 	"""Get and save emails from Google, Bing and Baidu.
 
 	Args:
 		scan_history (startScan.ScanHistory): Scan history object.
+		activity_id: ScanActivity Object
 		results_dir (str): Results directory.
 
 	Returns:
@@ -3867,36 +4116,34 @@ def get_and_save_emails(scan_history, results_dir):
 	emails = []
 
 	# Proxy settings
-	get_random_proxy()
+	# get_random_proxy()
 
 	# Gather emails from Google, Bing and Baidu
+	output_file = f'{results_dir}/emails_tmp.txt'
+	history_file = f'{results_dir}/commands.txt'
+	command = f'python3 /usr/src/github/Infoga/infoga.py --domain {scan_history.domain.name} --source all --report {output_file}'
 	try:
-		logger.info('Getting emails from Google ...')
-		email_from_google = get_emails_from_google(scan_history.domain.name)
-		logger.info('Getting emails from Bing ...')
-		email_from_bing = get_emails_from_bing(scan_history.domain.name)
-		logger.info('Getting emails from Baidu ...')
-		email_from_baidu = get_emails_from_baidu(scan_history.domain.name)
-		emails = list(set(email_from_google + email_from_bing + email_from_baidu))
-		logger.info(emails)
+		run_command(
+			command,
+			shell=False,
+			history_file=history_file,
+			scan_id=scan_history.id,
+			activity_id=activity_id)
+
+		with open(output_file) as f:
+			for line in f.readlines():
+				if 'Email' in line:
+					split_email = line.split(' ')[2]
+					emails.append(split_email)
+
+		output_path = f'{results_dir}/emails.txt'
+		with open(output_path, 'w') as output_file:
+			for email_address in emails:
+				save_email(email_address, scan_history)
+				output_file.write(f'{email_address}\n')
+
 	except Exception as e:
 		logger.exception(e)
-
-	# Write to file
-	output_path = f'{results_dir}/emails.txt'
-	with open(output_path, 'w') as output_file:
-		for email_address in emails:
-			save_email(email_address, scan_history)
-			output_file.write(f'{email_address}\n')
-
-		# Fill output_file with possible email address
-		output_file.write(f'%@{scan_history.domain.name}\n')
-		output_file.write(f'%@%.{scan_history.domain.name}\n')
-		output_file.write(f'%.%@{scan_history.domain.name}\n')
-		output_file.write(f'%.%@%.{scan_history.domain.name}\n')
-		output_file.write(f'%_%@{scan_history.domain.name}\n')
-		output_file.write(f'%_%@%.{scan_history.domain.name}\n')
-
 	return emails
 
 
@@ -4042,6 +4289,11 @@ def save_endpoint(
 	scheme = urlparse(http_url).scheme
 	endpoint = None
 	created = False
+	if ctx.get('domain_id'):
+		domain = Domain.objects.get(id=ctx.get('domain_id'))
+		if domain.name not in http_url:
+			logger.error(f"{http_url} is not a URL of domain {domain.name}. Skipping.")
+			return None, False
 	if crawl:
 		ctx['track'] = False
 		results = http_crawl(
@@ -4106,6 +4358,12 @@ def save_subdomain(subdomain_name, ctx={}):
 		logger.error(f'{subdomain_name} is out-of-scope. Skipping.')
 		return None, False
 
+	if ctx.get('domain_id'):
+		domain = Domain.objects.get(id=ctx.get('domain_id'))
+		if domain.name not in subdomain_name:
+			logger.error(f"{subdomain_name} is not a subdomain of domain {domain.name}. Skipping.")
+			return None, False
+
 	scan = ScanHistory.objects.filter(pk=scan_id).first()
 	domain = scan.domain if scan else None
 	subdomain, created = Subdomain.objects.get_or_create(
@@ -4113,7 +4371,7 @@ def save_subdomain(subdomain_name, ctx={}):
 		target_domain=domain,
 		name=subdomain_name)
 	if created:
-		logger.warning(f'Found new subdomain {subdomain_name}')
+		# logger.warning(f'Found new subdomain {subdomain_name}')
 		subdomain.discovered_date = timezone.now()
 		if subscan_id:
 			subdomain.subdomain_subscan_ids.add(subscan_id)
@@ -4126,8 +4384,8 @@ def save_email(email_address, scan_history=None):
 		logger.info(f'Email {email_address} is invalid. Skipping.')
 		return None, False
 	email, created = Email.objects.get_or_create(address=email_address)
-	if created:
-		logger.warning(f'Found new email address {email_address}')
+	# if created:
+	# 	logger.warning(f'Found new email address {email_address}')
 
 	# Add email to ScanHistory
 	if scan_history:
@@ -4141,8 +4399,8 @@ def save_employee(name, designation, scan_history=None):
 	employee, created = Employee.objects.get_or_create(
 		name=name,
 		designation=designation)
-	if created:
-		logger.warning(f'Found new employee {name}')
+	# if created:
+	# 	logger.warning(f'Found new employee {name}')
 
 	# Add employee to ScanHistory
 	if scan_history:
@@ -4157,8 +4415,8 @@ def save_ip_address(ip_address, subdomain=None, subscan=None, **kwargs):
 		logger.info(f'IP {ip_address} is not a valid IP. Skipping.')
 		return None, False
 	ip, created = IpAddress.objects.get_or_create(address=ip_address)
-	if created:
-		logger.warning(f'Found new IP {ip_address}')
+	# if created:
+	# 	logger.warning(f'Found new IP {ip_address}')
 
 	# Set extra attributes
 	for key, value in kwargs.items():
@@ -4212,7 +4470,7 @@ def save_imported_subdomains(subdomains, ctx={}):
 			output_file.write(f'{subdomain}\n')
 
 
-@app.task
+@app.task(name='query_reverse_whois', bind=False, queue='query_reverse_whois_queue')
 def query_reverse_whois(lookup_keyword):
 	"""Queries Reverse WHOIS information for an organization or email address.
 
@@ -4225,7 +4483,7 @@ def query_reverse_whois(lookup_keyword):
 	return get_associated_domains(lookup_keyword)
 
 
-@app.task
+@app.task(name='query_ip_history', bind=False, queue='query_ip_history_queue')
 def query_ip_history(domain):
 	"""Queries the IP history for a domain
 
@@ -4238,7 +4496,7 @@ def query_ip_history(domain):
 	return get_domain_historical_ip_address(domain)
 
 
-@app.task
+@app.task(name='gpt_vulnerability_description', bind=False, queue='gpt_queue')
 def gpt_vulnerability_description(vulnerability_id):
 	"""Generate and store Vulnerability Description using GPT.
 
@@ -4258,7 +4516,6 @@ def gpt_vulnerability_description(vulnerability_id):
 
 	# check in db GPTVulnerabilityReport model if vulnerability description and path matches
 	stored = GPTVulnerabilityReport.objects.filter(url_path=path).filter(title=lookup_vulnerability.name).first()
-	print(stored)
 	if stored:
 		response = {
 			'status': True,
@@ -4268,27 +4525,22 @@ def gpt_vulnerability_description(vulnerability_id):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
-		vulnerability_description = ''
-		vulnerability_description += f'Vulnerability Title: {lookup_vulnerability.name}'
-		# gpt gives concise vulnerability description when a vulnerable URL is provided
-		vulnerability_description += f'\nVulnerable URL: {path}'
+		vulnerability_description = get_gpt_vuln_input_description(
+			lookup_vulnerability.name,
+			path
+		)
 		# one can add more description here later
 
 		gpt_generator = GPTVulnerabilityReportGenerator()
 		response = gpt_generator.get_vulnerability_description(vulnerability_description)
-		gpt_report = GPTVulnerabilityReport()
-		gpt_report.url_path = path
-		gpt_report.title = lookup_vulnerability.name
-		gpt_report.description = response.get('description')
-		gpt_report.impact = response.get('impact')
-		gpt_report.remediation = response.get('remediation')
-		gpt_report.save()
-
-		for url in response.get('references', []):
-			ref, created = VulnerabilityReference.objects.get_or_create(url=url)
-			gpt_report.references.add(ref)
-			gpt_report.save()
-
+		add_gpt_description_db(
+			lookup_vulnerability.name,
+			path,
+			response.get('description'),
+			response.get('impact'),
+			response.get('remediation'),
+			response.get('references', [])
+		)
 
 	# for all vulnerabilities with the same vulnerability name this description has to be stored.
 	# also the consition is that the url must contain a part of this.

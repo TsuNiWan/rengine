@@ -21,6 +21,7 @@ from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import *
+from reNgine.gpt import GPTAttackSuggestionGenerator
 from reNgine.utilities import is_safe_path
 from scanEngine.models import *
 from startScan.models import *
@@ -30,6 +31,56 @@ from targetApp.models import *
 from .serializers import *
 
 logger = logging.getLogger(__name__)
+
+
+class GPTAttackSuggestion(APIView):
+	def get(self, request):
+		req = self.request
+		subdomain_id = req.query_params.get('subdomain_id')
+		if not subdomain_id:
+			return Response({
+				'status': False,
+				'error': 'Missing GET param Subdomain `subdomain_id`'
+			})
+		try:
+			subdomain = Subdomain.objects.get(id=subdomain_id)
+		except Exception as e:
+			return Response({
+				'status': False,
+				'error': 'Subdomain not found with id ' + subdomain_id
+			})
+		if subdomain.attack_surface:
+			return Response({
+				'status': True,
+				'subdomain_name': subdomain.name,
+				'description': subdomain.attack_surface
+			})
+		ip_addrs = subdomain.ip_addresses.all()
+		open_ports_str = ''
+		for ip in ip_addrs:
+			ports = ip.ports.all()
+			for port in ports:
+				open_ports_str += f'{port.number}/{port.service_name}, '
+		tech_used = ''
+		for tech in subdomain.technologies.all():
+			tech_used += f'{tech.name}, '
+		input = f'''
+			Subdomain Name: {subdomain.name}
+			Subdomain Page Title: {subdomain.page_title}
+			Open Ports: {open_ports_str}
+			HTTP Status: {subdomain.http_status}
+			Technologies Used: {tech_used}
+			Content type: {subdomain.content_type}
+			Web Server: {subdomain.webserver}
+			Page Content Length: {subdomain.content_length}
+		'''
+		gpt = GPTAttackSuggestionGenerator()
+		response = gpt.get_attack_suggestion(input)
+		response['subdomain_name'] = subdomain.name
+		if response.get('status'):
+			subdomain.attack_surface = response.get('description')
+			subdomain.save()
+		return Response(response)
 
 
 class GPTVulnerabilityReportGenerator(APIView):
@@ -2109,7 +2160,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			elif _order_col == '6':
 				order_col = 'content_length'
 			elif _order_col == '7':
-				order_col = 'technologies'
+				order_col = 'techs'
 			elif _order_col == '8':
 				order_col = 'webserver'
 			elif _order_col == '9':
@@ -2144,7 +2195,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 								 Q(http_status__icontains=search_value) |
 								 Q(content_type__icontains=search_value) |
 								 Q(webserver__icontains=search_value) |
-								 Q(technologies__name__icontains=search_value) |
+								 Q(techs__name__icontains=search_value) |
 								 Q(content_type__icontains=search_value) |
 								 Q(matched_gf_patterns__icontains=search_value))
 
@@ -2171,7 +2222,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			elif 'technology' in lookup_title:
 				qs = (
 					self.queryset
-					.filter(technologies__name__icontains=lookup_content)
+					.filter(techs__name__icontains=lookup_content)
 				)
 			elif 'gf_pattern' in lookup_title:
 				qs = (
@@ -2252,7 +2303,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			elif 'technology' in lookup_title:
 				qs = (
 					self.queryset
-					.exclude(technologies__name__icontains=lookup_content)
+					.exclude(techs__name__icontains=lookup_content)
 				)
 			elif 'gf_pattern' in lookup_title:
 				qs = (
@@ -2362,20 +2413,17 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		_order_direction = self.request.GET.get(u'order[0][dir]', None)
 		if search_value or _order_col or _order_direction:
 			order_col = 'severity'
-			if _order_col == '0' or _order_col == '14':
-				order_col = 'open_status'
-			elif _order_col == '1':
-				order_col = 'type'
-			elif _order_col == '2':
+			if _order_col == '1':
+				order_col = 'source'
+			elif _order_col == '3':
 				order_col = 'name'
-			elif _order_col == '6':
-				order_col = 'severity'
 			elif _order_col == '7':
-				order_col = 'cvss_score'
-			elif _order_col == '10':
+				order_col = 'severity'
+			elif _order_col == '11':
 				order_col = 'http_url'
-			elif _order_col == '13':
-				order_col = 'discovered_date'
+			elif _order_col == '15':
+				order_col = 'open_status'
+
 			if _order_direction == 'desc':
 				order_col = f'-{order_col}'
 			# if the search query is separated by = means, it is a specific lookup

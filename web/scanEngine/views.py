@@ -181,7 +181,7 @@ def interesting_lookup(request, slug):
                 request,
                 messages.INFO,
                 'Lookup Keywords updated successfully')
-            return http.HttpResponseRedirect(reverse('interesting_lookup'))
+            return http.HttpResponseRedirect(reverse('interesting_lookup', kwargs={'slug': slug}))
 
     if lookup_keywords:
         form.set_value(lookup_keywords)
@@ -454,6 +454,37 @@ def tool_arsenal_section(request, slug):
     tools = InstalledExternalTool.objects.all().order_by('id')
     context['installed_tools'] = tools
     return render(request, 'scanEngine/settings/tool_arsenal.html', context)
+
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def api_vault(request, slug):
+    context = {}
+    if request.method == "POST":
+        key_openai = request.POST.get('key_openai')
+        key_netlas = request.POST.get('key_netlas')
+
+
+        if key_openai:
+            openai_api_key = OpenAiAPIKey.objects.first()
+            if openai_api_key:
+                openai_api_key.key = key_openai
+                openai_api_key.save()
+            else:
+                OpenAiAPIKey.objects.create(key=key_openai)
+
+        if key_netlas:
+            netlas_api_key = NetlasAPIKey.objects.first()
+            if netlas_api_key:
+                netlas_api_key.key = key_netlas
+                netlas_api_key.save()
+            else:
+                NetlasAPIKey.objects.create(key=key_netlas)
+
+    openai_key = OpenAiAPIKey.objects.first()
+    netlas_key = NetlasAPIKey.objects.first()
+    context['openai_key'] = openai_key
+    context['netlas_key'] = netlas_key
+    return render(request, 'scanEngine/settings/api.html', context)
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)

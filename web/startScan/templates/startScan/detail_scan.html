@@ -43,6 +43,11 @@ Scan Findings
 				<li class="nav-item">
 					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
 				</li>
+				{% if history.buckets.all %}
+				<li class="nav-item">
+					<a class="nav-link" id="pills-buckets-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#buckets-tab">S3 Buckets</a>
+				</li>
+				{% endif %}
 				<li class="nav-item interesting-tab-show" style="display: none">
 					<a class="nav-link" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#interesting-tab">Interesting Recon</a>
 				</li>
@@ -385,6 +390,14 @@ Scan Findings
 						</div>
 					</div>
 					{% endif %}
+					{% if history.buckets.all %}
+					<div class="col-6 related-domains-tab-show">
+						<div class="alert alert-warning alert-dismissible fade show" role="alert">
+							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+							<i class="fe-trending-up me-2"></i> reNgine identified {{history.buckets.count}} Buckets related to {{history.domain}}. <a class="" id="buckets-tab-btn" href="#">Check it out!</a>
+						</div>
+					</div>
+					{% endif %}
 					{% if history.domain.domain_info.related_tlds.all %}
 					<div class="col-6 related-domains-tab-show">
 						<div class="alert alert-warning alert-dismissible fade show" role="alert">
@@ -670,7 +683,7 @@ Scan Findings
 											<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 												{% if history.domain.domain_info.historical_ips.all %}
 												<div class="alert alert-success">{{history.domain.domain_info.historical_ips.all.count}} Historical Ips</div>
-												<table id="basic-datatable" class="table dt-responsive nowrap w-100">
+												<table id="basic-datatable" class="table dt-responsive w-100">
 													<thead>
 															<tr>
 																	<th>IP</th>
@@ -892,6 +905,67 @@ Scan Findings
 	<div class="tab-pane" id="subdomain-tab">
 		{% include 'base/_items/subdomain_tab_content.html' with detail_scan=True%}
 	</div>
+	<div class="tab-pane" id="buckets-tab">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="p-2">
+						<div class="table-responsive">
+							<table id="s3-datatable" class="table dt-responsive w-100">
+								<thead>
+									<tr>
+										<th>Name</th>
+										<th>Region</th>
+										<th>Provider</th>
+										<th>Owner</th>
+										<th>Objects Count</th>
+										<th>Bucket Size</th>
+										<th>Auth Users Permission</th>
+										<th>All Users Permission</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for bucket in history.buckets.all %}
+										<tr>
+											<td><h5 class="m-0 fw-normal">{{bucket.name}}</h5></td>
+											<td>{{bucket.region}}</td>
+											<td>{{bucket.provider}}</td>
+											<td>
+												<ul>
+													<li>ID: {{bucket.owner_id}}</li>
+													<li>Display Name: {{bucket.owner_display_name}}</li>
+												</ul>
+											</td>
+											<td>{{bucket.num_objects}}</td>
+											<td>{{bucket.size}}</td>
+											<td>
+												<ul>
+													{% if bucket.perm_auth_users_read == 1 %}<li><strong>READ</strong></li>{% endif %}
+													{% if bucket.perm_auth_users_write == 1 %}<li><strong>WRITE</strong></li>{% endif %}
+													{% if bucket.perm_auth_users_read_acl == 1 %}<li><strong>Read_ACP</strong></li>{% endif %}
+													{% if bucket.perm_auth_users_write_acl == 1 %}<li><strong>WRITE_ACP</strong></li>{% endif %}
+													{% if bucket.perm_auth_users_full_control == 1 %}<li><strong>FULL_CONTROL</strong></li>{% endif %}
+												</ul>
+											</td>
+											<td>
+												<ul>
+													{% if bucket.perm_all_users_read == 1 %}<li><strong>READ</strong></li>{% endif %}
+													{% if bucket.perm_all_users_write == 1 %}<li><strong>WRITE</strong></li>{% endif %}
+													{% if bucket.perm_all_users_read_acl == 1 %}<li><strong>Read_ACP</strong></li>{% endif %}
+													{% if bucket.perm_all_users_write_acl == 1 %}<li><strong>WRITE_ACP</strong></li>{% endif %}
+													{% if bucket.perm_all_users_full_control == 1 %}<li><strong>FULL_CONTROL</strong></li>{% endif %}
+												</ul>
+											</td>
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	{% if 'screenshot' in history.tasks %}
 	<div class="tab-pane" id="screenshot-tab">
 		<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
@@ -984,7 +1058,7 @@ Scan Findings
 				<div class="card">
 					<div class="card-body">
 						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">Display <span class="caret"></span></button>
-						<table id="directories-table" class="table style-3 table-hover">
+						<table id="directories-table" class="table dt-responsive w-100">
 							<thead>
 								<tr>
 									<th class="checkbox-column">Status</th>
@@ -1178,7 +1252,7 @@ Scan Findings
 							</div>
 						</div>
 						<h4 class="header-title mb-0"><span id="interesting_subdomain_count_badge"><span class="spinner-border spinner-border-sm me-1"></span></span> Interesting Subdomains</h4>
-						<table id="interesting_subdomains" class="table style-3 table-hover">
+						<table id="interesting_subdomains" class="table dt-responsive w-100">
 							<thead>
 								<tr>
 									<th>Subdomain</th>
@@ -1205,7 +1279,7 @@ Scan Findings
 							</div>
 						</div>
 						<h4 class="header-title mb-0"><span id="interesting_endpoint_count_badge"><span class="spinner-border spinner-border-sm me-1"></span></span> Interesting Endpoints</h4>
-						<table id="interesting_endpoints" class="table style-3 table-hover">
+						<table id="interesting_endpoints" class="table dt-responsive w-100">
 							<thead>
 								<tr>
 									<th>URL</th>
@@ -1228,7 +1302,7 @@ Scan Findings
 				<div class="card" id="recon_changes_subdomain_div">
 					<div class="card-body">
 						<h4 class="header-title mb-0"><span id="subdomain_change_count"><span class="spinner-border spinner-border-sm me-1"></span></span> Subdomain Changes</h4>
-						<table class="table style-3 table-hover" id="table-subdomain-changes">
+						<table class="table dt-responsive w-100" id="table-subdomain-changes">
 							<thead>
 								<tr>
 									<th>Subdomain</th>
@@ -1246,7 +1320,7 @@ Scan Findings
 				<div class="card">
 					<div class="card-body">
 						<h4 class="header-title mb-0"><span id="endpoint_change_count"><span class="spinner-border spinner-border-sm me-1"></span></span> Endpoint Changes</h4>
-						<table class="table style-3 table-hover" id="table-endpoint-changes">
+						<table class="table dt-responsive w-100" id="table-endpoint-changes">
 							<thead>
 								<tr>
 									<th>Subdomain</th>
@@ -1286,9 +1360,11 @@ Scan Findings
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script src="{% static 'plugins/j-map/jquery-jvectormap.min.js' %}"></script>
 <script src="{% static 'plugins/j-map/maps/jquery-jvectormap-world-mill-en.js' %}"></script>
+<script src="{% static 'custom/vuln_datatables.js' %}"></script>
 {# search suggestions scripts #}
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+<script src="{% static 'custom/subdomain_datatable.js' %}"></script>
 
 {% if total_vulnerability_count > 0 %}
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
@@ -1467,6 +1543,9 @@ $(document).ready(function() {
 		// vulnerability datatable
 		const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 		$("#pills-vulnerabilities-tab").click(function() {
+			var is_grouping = false;
+			var grouping_col = 3;
+			var vuln_ajax_url = '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables';
 			var vulnerability_table = $('#vulnerability_results').DataTable({
 				"destroy": true,
 				"oLanguage": {
@@ -1481,51 +1560,21 @@ $(document).ready(function() {
 				"<'table-responsive'tr>" +
 				"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 				"stripeClasses": [],
-				"lengthMenu": [20, 50, 100, 500, 1000],
-				"pageLength": 100,
+				"lengthMenu": vuln_datatable_length_menu,
+				"pageLength": vuln_datatable_page_length,
 				'serverSide': true,
-				"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
-				"order": [[ 4, "desc" ]],
-				"columns": [
-					{'data': 'id'},
-					{'data': 'source'},
-					{'data': 'type'},
-
-					{'data': 'name'},
-					{'data': 'cvss_metrics'},
-					{'data': 'tags'},
-					{'data': 'hackerone_report_id'},
-
-					{'data': 'severity'},
-					{'data': 'cvss_score'},
-					{'data': 'cve_ids'},
-					{'data': 'cwe_ids'},
-					{'data': 'http_url'},
-
-					{'data': 'description'},
-					{'data': 'references'},
-
-					{'data': 'discovered_date'},
-
-					{'data': 'open_status'},
-
-					{'data': 'hackerone_report_id'},
-
-					// extras
-					{'data': 'extracted_results'},
-					{'data': 'curl_command'},
-					{'data': 'matcher_name'},
-					{'data': 'request'},
-					{'data': 'response'},
-					{'data': 'template'},
-					{'data': 'template_url'},
-					{'data': 'template_id'},
-					{'data': 'impact'},
-					{'data': 'remediation'},
-					{'data': 'is_gpt_used'},
-				],
+				"ajax": {
+						'url': vuln_ajax_url,
+				},
+				"rowGroup": {
+					"startRender": function(rows, group) {
+						return group + ' (' + rows.count() + ' Vulnerabilities)';
+					}
+				},
+				"order": [[ 7, "desc" ]],
+				"columns": vuln_datatable_columns,
 				"columnDefs": [
-					{ "orderable": false, "targets": [9, 12]},
+					{ "orderable": false, "targets": [16]},
 					{
 						"targets": [2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 17, 18, 19],
 						"visible": false,
@@ -1657,7 +1706,7 @@ $(document).ready(function() {
 					{
 						"render": function ( data, type, row ) {
 							if (data.includes('http')) {
-								return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+								return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+split_into_lines(htmlEncode(data), 150)+"</a>";
 							}
 							return data;
 						},
@@ -1683,6 +1732,7 @@ $(document).ready(function() {
 								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
 								</a>
 								<div class="dropdown-menu" style="">
+								<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
 								<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
 								<a class="text-danger dropdown-item" href="javascript:delete_vulnerability(${row['id']});">Delete Vulnerability</a>
 								</div>
@@ -1695,21 +1745,19 @@ $(document).ready(function() {
 						"targets": 16,
 					},
 				],
-				drawCallback: function () {
-					if(!$('#vuln_source_checkbox').is(":checked")){
-						vulnerability_table.column(1).visible(false);
-					}
-
-					if(!$('#vuln_severity_checkbox').is(":checked")){
-						vulnerability_table.column(7).visible(false);
-					}
-
-					if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
-						vulnerability_table.column(11).visible(false);
-					}
-					if(!$('#vuln_status_checkbox').is(":checked")){
-						vulnerability_table.column(15).visible(false);
-					}
+				"initComplete": function(settings, json) {
+					api = this.api();
+					// column visibility
+					vulnerability_datatable_col_visibility(vulnerability_table);
+					$(".dtrg-group th:contains('No group')").remove();
+				},
+				drawCallback: function (settings) {
+					drawCallback_api = this.api();
+					$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+					$('.bs-tooltip').tooltip();
+					setTimeout(function() {
+						$(".dtrg-group th:contains('No group')").remove();
+					}, 1);
 				},
 				createdRow: function( row, data, dataIndex ) {
 					if (!data['open_status']){
@@ -1717,6 +1765,25 @@ $(document).ready(function() {
 					}
 				},
 			});
+
+			var radioGroup = document.getElementsByName('grouping_vuln_row');
+			radioGroup.forEach(function(radioButton) {
+				radioButton.addEventListener('change', function() {
+					if (this.checked) {
+						var groupRows = document.querySelectorAll('tr.group');
+						var col_index = get_datatable_col_index(this.value, vuln_datatable_columns);
+						api.page.len(-1).draw();
+						api.order([col_index, 'asc']).draw();
+						vulnerability_table.rowGroup().dataSrc(this.value);
+						Snackbar.show({
+							text: 'Vulnerabilities grouped by ' + this.value,
+							pos: 'top-right',
+							duration: 2500
+						});
+					}
+				});
+			});
+
 			$('#vulnerability-search-button').click(function () {
 				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 			});
@@ -1784,7 +1851,7 @@ $(document).ready(function() {
 				"lengthMenu": [20, 50, 100, 500, 1000],
 				"pageLength": 20,
 				'serverSide': true,
-				"ajax": '/api/listDatatableSubdomain/?scan_id={{scan_history_id}}&format=datatables&only_directory',
+				"ajax": '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{scan_history_id}}&format=datatables&only_directory',
 				"order": [[ 5, "desc" ]],
 				"columns": [
 					{'data': 'id'},
@@ -1974,8 +2041,8 @@ $(document).ready(function() {
 	get_subdomain_changes({{scan_history_id}});
 	get_endpoint_changes({{scan_history_id}});
 
-	get_interesting_subdomains(null, {{scan_history_id}});
-	get_interesting_endpoints(null, {{scan_history_id}});
+	get_interesting_subdomains(project='{{current_project.slug}}', null, {{scan_history_id}});
+	get_interesting_endpoints(project='{{current_project.slug}}', null, {{scan_history_id}});
 
 	loadSubscanHistoryWidget(scan_history_id={{scan_history_id}}, domain_id=null);
 
@@ -2019,6 +2086,10 @@ $(document).ready(function() {
 		$('.nav-tabs a[href="#interesting-tab"]').tab('show')
 	});
 
+	$('#buckets-tab-btn').click(function(){
+		$('.nav-tabs a[href="#buckets-tab"]').tab('show')
+	});
+
 	$('#recon-changes-tab-btn').click(function(){
 		$('.nav-tabs a[href="#recon-changes-tab"]').tab('show')
 	});
@@ -2047,63 +2118,37 @@ $(document).ready(function() {
 	{% endif %}
 
 	$("#pills-subdomain-tab").click(function() {
+		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{scan_history_id}}&format=datatables';
+		var is_subd_grouping = false;
+		var subd_grouping_col = 8;
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
 			"headerCallback": function(e, a, t, n, s) {
 				e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
 			},
 			"destroy": true,
 			"processing": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Search...",
-				"sLengthMenu": "Results :  _MENU_",
-				"sProcessing": "Fetching Subdomains... Please wait..."
-			},
+			"oLanguage": subdomain_oLanguage,
 			"fnCreatedRow": function (nRow, aData, iDataIndex) {
 				$(nRow).attr('id', 'subdomain_row_' + aData['id']);
 			},
 			"stripeClasses": [],
-			"lengthMenu": [50, 100, 500, 1000],
-			"pageLength": 50,
+			"lengthMenu": subdomain_datatable_length_menu,
+			"pageLength": subdomain_datatable_page_length,
 			'serverSide': true,
-			"ajax": '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{scan_history_id}}&format=datatables',
+			"ajax": {
+					'url': subdomain_ajax_url,
+			},
+			"rowGroup": {
+				"startRender": function(rows, group) {
+					return group + ' (' + rows.count() + ' Subdomains)';
+				}
+			},
 			"order": [[ 8, "desc" ]],
-			"columns": [
-				{'data': 'id'},
-				{'data': 'name'},
-				{'data': 'endpoint_count'},
-				{'data': 'endpoint_count'},
-				{'data': 'http_status'},
-				{'data': 'page_title'},
-				{'data': 'ip_addresses'},
-				{'data': 'ip_addresses'},
-				{'data': 'content_length', 'searchable': false},
-				{'data': 'screenshot_path', 'searchable': false},
-				{'data': 'response_time'},
-				{'data': 'technologies'},
-				{'data': 'http_url'},
-				{'data': 'cname'},
-				{'data': 'is_interesting'},
-				{'data': 'info_count'},
-				{'data': 'low_count'},
-				{'data': 'medium_count'},
-				{'data': 'high_count'},
-				{'data': 'critical_count'},
-				{'data': 'todos_count'},
-				{'data': 'is_important'},
-				{'data': 'webserver'},
-				{'data': 'content_type'},
-				{'data': 'id'},
-				{'data': 'directories_count'},
-				{'data': 'subscan_count'},
-				{'data': 'waf'},
-			],
+			"columns": subdomain_datatable_columns,
 			"columnDefs": [
 				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 				{
-					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27],
+					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28],
 					"visible": false,
 					"searchable": false,
 				},
@@ -2315,6 +2360,7 @@ $(document).ready(function() {
 							const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 							return `
 							<div class="btn-group mt-2">
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Show Attack Surface" class="btn btn-primary me-1 bs-tooltip" onclick="show_attack_surface_modal(${row['id']})"><i class="fe-eye"></i></button>
 							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
 							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
 							<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
@@ -2332,40 +2378,43 @@ $(document).ready(function() {
 				"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
 				"<'table-responsive'tr>" +
 				"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-				drawCallback: function () {
+				"initComplete": function(settings, json) {
+					api = this.api();
+					subdomain_datatable_col_visibility(subdomain_datatables);
+					$(".dtrg-group th:contains('No group')").remove();
+				},
+				"drawCallback": function () {
 					$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 					$('.bs-tooltip').tooltip();
-
-					if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(4).visible(false);
-					}
-					if(!$('#sub_page_title_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(5).visible(false);
-					}
-					if(!$('#sub_ip_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(6).visible(false);
-					}
-					if(!$('#sub_ports_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(7).visible(false);
-					}
-					if(!$('#sub_content_length_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(8).visible(false);
-					}
-					if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(8).visible(false);
-					}
-					if(!$('#sub_response_time_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(10).visible(false);
-					}
-					if(!$('#sub_screenshot_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(9).visible(false);
-					}
+					$('.dtrg-group').remove();
+					drawCallback_api = this.api();
+					setTimeout(function() {
+						$(".dtrg-group th:contains('No group')").remove();
+					}, 1);
 				},
 				"rowCallback": function( row, data, dataIndex ) {
 					if (data['is_important']){
 						$(row).addClass('table-danger');
 					}
 				},
+			});
+
+			var radioGroup = document.getElementsByName('grouping_subd_row');
+			radioGroup.forEach(function(radioButton) {
+				radioButton.addEventListener('change', function() {
+					if (this.checked) {
+						var groupRows = document.querySelectorAll('tr.group');
+						var col_index = get_datatable_col_index(this.value, subdomain_datatable_columns);
+						api.page.len(-1).draw();
+						api.order([col_index, 'asc']).draw();
+						subdomain_datatables.rowGroup().dataSrc(this.value);
+						Snackbar.show({
+							text: 'Subdomains grouped by ' + this.value,
+							pos: 'top-right',
+							duration: 2500
+						});
+					}
+				});
 			});
 
 			$('#reload_subdomain_table_btn').click(function () {
@@ -2571,6 +2620,24 @@ $(document).ready(function() {
 				el.html(el.html()+' (Total Assets : 0)');
 			}
 		}
+	});
+
+	// s3buckets datatable
+	var s3_table = $('#s3-datatable').DataTable({
+		"order": [[0, 'asc']],
+		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+		"<'table-responsive'tr>" +
+		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"stripeClasses": [],
+		"lengthMenu": [[50, 100, 200, 300, 400, -1], [50, 100, 200, 300, 400, 'All']],
+		"pageLength": 50,
 	});
 
 });

@@ -514,14 +514,15 @@ function report_hackerone(vulnerability_id, severity) {
 	}])
 }
 
-function get_interesting_subdomains(target_id, scan_history_id) {
+function get_interesting_subdomains(project, target_id, scan_history_id) {
 	if (target_id) {
-		url = `/api/listInterestingEndpoints/?target_id=${target_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project=${project}&target_id=${target_id}&format=datatables`;
 		non_orderable_targets = [0, 1, 2, 3];
 	} else if (scan_history_id) {
-		url = `/api/listInterestingSubdomains/?scan_id=${scan_history_id}&format=datatables`;
+		url = `/api/listInterestingSubdomains/?project=${project}&scan_id=${scan_history_id}&format=datatables`;
 		non_orderable_targets = [];
 	}
+	console.log(url);
 	var interesting_subdomain_table = $('#interesting_subdomains').DataTable({
 		"drawCallback": function(settings, start, end, max, total, pre) {
 			// if no interesting subdomains are found, hide the datatable and show no interesting subdomains found badge
@@ -566,8 +567,8 @@ function get_interesting_subdomains(target_id, scan_history_id) {
 		"order": [
 			[3, "desc"]
 		],
-		"lengthMenu": [5, 10, 20, 50, 100],
-		"pageLength": 10,
+		"lengthMenu": [[50, 100, 200, 500, -1], [50, 100, 200, 500, 'All']],
+		"pageLength": 50,
 		"columns": [{
 			'data': 'name'
 		}, {
@@ -626,13 +627,13 @@ function get_interesting_subdomains(target_id, scan_history_id) {
 	});
 }
 
-function get_interesting_endpoints(target_id, scan_history_id) {
+function get_interesting_endpoints(project, target_id, scan_history_id) {
 	var non_orderable_targets = [];
 	if (target_id) {
-		url = `/api/listInterestingEndpoints/?target_id=${target_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project={project}&target_id=${target_id}&format=datatables`;
 		// non_orderable_targets = [0, 1, 2, 3];
 	} else if (scan_history_id) {
-		url = `/api/listInterestingEndpoints/?scan_id=${scan_history_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project={project}&scan_id=${scan_history_id}&format=datatables`;
 		// non_orderable_targets = [0, 1, 2, 3];
 	}
 	$('#interesting_endpoints').DataTable({
@@ -1062,7 +1063,7 @@ function render_endpoint_in_xlmodal(endpoint_count, subdomain_name, result) {
 	$('#xl-modal-content').append(`<h5> ${endpoint_count} Endpoints Discovered on subdomain ${subdomain_name}</h5>`);
 	$('#xl-modal-content').append(`
 		<div class="">
-		<table id="endpoint-modal-datatable" class="table dt-responsive nowrap w-100">
+		<table id="endpoint-modal-datatable" class="table dt-responsive w-100">
 		<thead>
 		<tr>
 		<th>HTTP URL</th>
@@ -1133,7 +1134,7 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 	$('#xl-modal-content').append(`<ol id="vuln_results_ol" class="list-group list-group-numbered"></ol>`);
 	$('#xl-modal-content').append(`
 		<div class="">
-		<table id="vulnerability-modal-datatable" class="table dt-responsive nowrap w-100">
+		<table id="vulnerability-modal-datatable" class="table dt-responsive w-100">
 		<thead>
 		<tr>
 		<th>Type</th>
@@ -1290,7 +1291,7 @@ function render_directories_in_xl_modal(directory_count, subdomain_name, result)
 	$('#xl-modal-content').append(`<h5> ${directory_count} Directories Discovered on subdomain ${subdomain_name}</h5>`);
 	$('#xl-modal-content').append(`
 		<div class="">
-		<table id="directory-modal-datatable" class="table dt-responsive nowrap w-100">
+		<table id="directory-modal-datatable" class="table dt-responsive w-100">
 		<thead>
 		<tr>
 		<th>Directory</th>
@@ -1793,7 +1794,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 
 					content += `<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 						<div class="alert alert-success">${response.historical_ips.length} Historical Ips</div>
-						<table id="basic-datatable" class="table dt-responsive nowrap w-100">
+						<table id="basic-datatable" class="table dt-responsive w-100">
 							<thead>
 									<tr>
 											<th>IP</th>
@@ -2826,6 +2827,7 @@ function render_vuln_offcanvas(vuln){
 	title_content += `<span class="badge badge-${default_badge_color} text-${default_color}">${vuln.severity}</span>`;
 	title_content += `<span class="text-${default_color} ms-1">${vuln.name}</span>`;
 
+	body += `<p><b>ID: </b>${vuln.id}</p>`;
 	body += `<p><b>Discovered on: </b>${vuln.discovered_date}</p>`;
 	body += `<p><b>URL: </b><a href="${vuln.http_url}" target="_blank">${vuln.http_url}</a></p>`;
 	body += `<p><b>Severity: </b>${vuln.severity}<br><b>Type: </b>${vuln.type.toUpperCase()}<br><b>Source: </b> ${vuln.source.toUpperCase()}</p>`;
@@ -2908,7 +2910,7 @@ function render_vuln_offcanvas(vuln){
 		</tr>`
 	}
 
-	if (vuln.cwe_ids.length) {
+	if (vuln.cwe_ids != null && vuln.cwe_ids.length) {
 		body += `<tr>
 		<td style="width:30%">
 		<b>CWE IDs</b>
@@ -3006,7 +3008,7 @@ function render_vuln_offcanvas(vuln){
 		</div>`;
 	}
 
-	if (vuln.extracted_results.length) {
+	if (vuln.extracted_results != null && vuln.extracted_results.length) {
 		body += `<div class="accordion custom-accordion mt-2">
 		<h5 class="m-0 position-relative">
 		<a class="custom-accordion-title text-reset d-block"
@@ -3190,4 +3192,86 @@ function render_gpt_vuln_modal(data, title){
 
 	$('#modal-content').append(modal_content);
 	$('#modal_dialog').modal('show');
+}
+
+
+function get_datatable_col_index(lookup, cols){
+	// this function will be used to return index of lookup string and cols are datatables cols
+	return cols.findIndex(column => column.data === lookup);
+}
+
+
+function endpoint_datatable_col_visibility(endpoint_table){
+	if(!$('#end_http_status_filter_checkbox').is(":checked")){
+		endpoint_table.column(2).visible(false);
+	}
+	if(!$('#end_page_title_filter_checkbox').is(":checked")){
+		endpoint_table.column(3).visible(false);
+	}
+	if(!$('#end_tags_filter_checkbox').is(":checked")){
+		endpoint_table.column(4).visible(false);
+	}
+	if(!$('#end_content_type_filter_checkbox').is(":checked")){
+		endpoint_table.column(5).visible(false);
+	}
+	if(!$('#end_content_length_filter_checkbox').is(":checked")){
+		endpoint_table.column(6).visible(false);
+	}
+	if(!$('#end_response_time_filter_checkbox').is(":checked")){
+		endpoint_table.column(9).visible(false);
+	}
+}
+
+
+async function send_gpt__attack_surface_api_request(subdomain_id){
+	const api = `/api/tools/gpt_get_possible_attacks/?format=json&subdomain_id=${subdomain_id}`;
+	try {
+		const response = await fetch(api, {
+				method: 'GET',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken")
+				}
+		});
+		if (!response.ok) {
+			throw new Error('Request failed');
+		}
+		const data = await response.json();
+		return data;
+	} catch (error) {
+		throw new Error('Request failed');
+	}
+}
+
+
+async function show_attack_surface_modal(id){
+	var loader_title = "Loading...";
+	var text = 'Please wait while the GPT is generating attack surface.'
+	try {
+		showSwalLoader(loader_title, text);
+		const data = await send_gpt__attack_surface_api_request(id);
+		Swal.close();
+		if (data.status) {
+			$('#modal_title').html(`Attack Surface Suggestion for ${data.subdomain_name} (BETA)`);
+			$('#modal-content').empty();
+			$('#modal-content').append(data.description.replace(new RegExp('\r?\n','g'), '<br />'));
+			$('#modal_dialog').modal('show');
+		}
+		else{
+			Swal.close();
+			Swal.fire({
+				icon: 'error',
+				title: 'Oops...',
+				text: data.error,
+			});
+		}
+	} catch (error) {
+		console.error(error);
+		Swal.close();
+		Swal.fire({
+			icon: 'error',
+			title: 'Oops...',
+			text: 'Something went wrong!',
+		});
+	}
 }

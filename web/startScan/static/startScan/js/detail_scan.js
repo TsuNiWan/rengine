@@ -43,6 +43,9 @@ function render_ips(data)
 
 
 function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=null){
+	var is_endpoint_grouping = false;
+	var endpoint_grouping_col = 6;
+
 	var lookup_url = '/api/listEndpoints/?format=datatables&project=' + project;
 
 	if (scan_history_id) {
@@ -55,6 +58,18 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 	if (gf_tags){
 		lookup_url += `&gf_tag=${gf_tags}`
 	}
+	var endpoint_datatable_columns = [
+		{'data': 'id'},
+		{'data': 'http_url'},
+		{'data': 'http_status'},
+		{'data': 'page_title'},
+		{'data': 'matched_gf_patterns'},
+		{'data': 'content_type'},
+		{'data': 'content_length', 'searchable': false},
+		{'data': 'techs'},
+		{'data': 'webserver'},
+		{'data': 'response_time', 'searchable': false},
+	];
 	var endpoint_table = $('#endpoint_results').DataTable({
 		"destroy": true,
 		"processing": true,
@@ -71,20 +86,16 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 		"lengthMenu": [100, 200, 300, 500, 1000],
 		"pageLength": 100,
 		'serverSide': true,
-		"ajax": lookup_url,
+		"ajax": {
+				'url': lookup_url,
+		},
+		"rowGroup": {
+			"startRender": function(rows, group) {
+				return group + ' (' + rows.count() + ' Endpoints)';
+			}
+		},
 		"order": [[ 6, "desc" ]],
-		"columns": [
-			{'data': 'id'},
-			{'data': 'http_url'},
-			{'data': 'http_status'},
-			{'data': 'page_title'},
-			{'data': 'matched_gf_patterns'},
-			{'data': 'content_type'},
-			{'data': 'content_length', 'searchable': false},
-			{'data': 'technologies'},
-			{'data': 'webserver'},
-			{'data': 'response_time', 'searchable': false},
-		],
+		"columns": endpoint_datatable_columns,
 		"columnDefs": [
 			{
 				"targets": [ 0 ],
@@ -100,8 +111,8 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				"render": function ( data, type, row ) {
 					var tech_badge = '';
 					var web_server = '';
-					if (row['technologies']){
-						tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true);
+					if (row['techs']){
+						tech_badge = `</br>` + parse_technology(row['techs'], "primary", outline=true);
 					}
 
 					if (row['webserver']) {
@@ -163,35 +174,49 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				"targets": 9,
 			},
 		],
-		drawCallback: function () {
+		"initComplete": function(settings, json) {
+			api = this.api();
+			endpoint_datatable_col_visibility(endpoint_table);
+			$(".dtrg-group th:contains('No group')").remove();
+		},
+		"drawCallback": function () {
 			$("body").tooltip({ selector: '[data-toggle=tooltip]' });
-			$('.dataTables_wrapper table').removeClass('table-striped');
+			// $('.dataTables_wrapper table').removeClass('table-striped');
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dtrg-group').remove();
+			$('.bs-tooltip').tooltip();
 			var clipboard = new Clipboard('.copyable');
 			$('.bs-tooltip').tooltip();
 			clipboard.on('success', function(e) {
 				setTooltip(e.trigger, 'Copied!');
 				hideTooltip(e.trigger);
 			});
-			if(!$('#end_http_status_filter_checkbox').is(":checked")){
-				endpoint_table.column(2).visible(false);
-			}
-			if(!$('#end_page_title_filter_checkbox').is(":checked")){
-				endpoint_table.column(3).visible(false);
-			}
-			if(!$('#end_tags_filter_checkbox').is(":checked")){
-				endpoint_table.column(4).visible(false);
-			}
-			if(!$('#end_content_type_filter_checkbox').is(":checked")){
-				endpoint_table.column(5).visible(false);
-			}
-			if(!$('#end_content_length_filter_checkbox').is(":checked")){
-				endpoint_table.column(6).visible(false);
-			}
-			if(!$('#end_response_time_filter_checkbox').is(":checked")){
-				endpoint_table.column(9).visible(false);
-			}
+			drawCallback_api = this.api();
+			setTimeout(function() {
+				$(".dtrg-group th:contains('No group')").remove();
+			}, 1);
 		}
 	});
+
+	var radioGroup = document.getElementsByName('grouping_endpoint_row');
+	radioGroup.forEach(function(radioButton) {
+	  radioButton.addEventListener('change', function() {
+	    if (this.checked) {
+	      var groupRows = document.querySelectorAll('tr.group');
+	      // Remove each group row
+				var col_index = get_datatable_col_index(this.value, endpoint_datatable_columns);
+				api.page.len(-1).draw();
+				api.order([col_index, 'asc']).draw();
+				endpoint_table.rowGroup().dataSrc(this.value);
+	      Snackbar.show({
+	        text: 'Endpoints grouped by ' + this.value,
+	        pos: 'top-right',
+	        duration: 2500
+	      });
+	    }
+	  });
+	});
+
 	$('#endpoint-search-button').click(function () {
 		endpoint_table.search($('#endpoints-search').val()).draw() ;
 	});
@@ -1199,20 +1224,19 @@ function download_subdomains(scan_id=null, domain_id=null, domain_name=null){
 	});
 }
 
-function download_interesting_subdomains(scan_id=null, domain_id=null, domain_name=null){
+function download_interesting_subdomains(project, scan_id=null, domain_id=null, domain_name=null){
 	Swal.fire({
 		title: 'Querying Interesting Subdomains...'
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
-	var url = `/api/queryInterestingSubdomains/?format=json`;
+	var url = `/api/queryInterestingSubdomains/?format=json&project=${project}`;
 	if (scan_id) {
-		url = `/api/queryInterestingSubdomains/?scan_id=${scan_id}&format=json`;
+		url += `&scan_id=${scan_id}`;
 	}
 	else if(domain_id){
-		url = `/api/queryInterestingSubdomains/?target_id=${domain_id}&format=json`;
+		url += `&target_id=${domain_id}`;
 	}
-	console.log(url);
 
 	if (domain_name) {
 		$('.modal-title').html( count + ' Interesting Subdomains for : <b>' + domain_name + '</b>');

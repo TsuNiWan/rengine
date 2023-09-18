@@ -110,6 +110,12 @@ then
   pip install -r /usr/src/github/CMSeeK/requirements.txt
 fi
 
+if [ ! -d "/usr/src/github/Infoga" ]
+then
+  echo "Cloning Infoga"
+  git clone https://github.com/m4ll0k/Infoga /usr/src/github/Infoga
+fi
+
 # clone ctfr
 if [ ! -d "/usr/src/github/ctfr" ]
 then
@@ -121,3 +127,25 @@ exec "$@"
 
 # httpx seems to have issue, use alias instead!!!
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
+
+
+# watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO -Q scan_queue &
+echo "Starting Workers..."
+celery -A reNgine.tasks worker --autoscale=7,0 --loglevel=info -Q main_scan_queue &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q initiate_scan_queue -n initiate_scan_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q subscan_queue -n subscan_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=20 --loglevel=info -Q report_queue -n report_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q send_notif_queue -n send_notif_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q send_scan_notif_queue -n send_scan_notif_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q send_task_notif_queue -n send_task_notif_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=5 --loglevel=info -Q send_file_to_discord_queue -n send_file_to_discord_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=5 --loglevel=info -Q send_hackerone_report_queue -n send_hackerone_report_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q parse_nmap_results_queue -n parse_nmap_results_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=20 --loglevel=info -Q geo_localize_queue -n geo_localize_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q query_whois_queue -n query_whois_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q remove_duplicate_endpoints_queue -n remove_duplicate_endpoints_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=50 --loglevel=info -Q run_command_queue -n run_command_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q query_reverse_whois_queue -n query_reverse_whois_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q query_ip_history_queue -n query_ip_history_worker &
+celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q gpt_queue -n gpt_worker
+exec "$@"

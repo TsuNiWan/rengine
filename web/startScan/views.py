@@ -1,5 +1,6 @@
 import markdown
 
+from celery import group
 from weasyprint import HTML
 from datetime import datetime
 from django.contrib import messages
@@ -309,7 +310,7 @@ def start_scan_ui(request, slug, domain_id):
 
 
 @has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
-def start_multiple_scan(request):
+def start_multiple_scan(request, slug):
     # domain = get_object_or_404(Domain, id=host_id)
     if request.method == "POST":
         if request.POST.get('scan_mode', 0):
@@ -318,12 +319,16 @@ def start_multiple_scan(request):
             engine_id = request.POST['scan_mode']
             list_of_domains = request.POST['list_of_domain_id']
 
+            grouped_scans = []
+
             for domain_id in list_of_domains.split(","):
                 # Start the celery task
                 scan_history_id = create_scan_object(domain_id, engine_id)
+                # domain = get_object_or_404(Domain, id=domain_id)
+
                 kwargs = {
                     'scan_history_id': scan_history_id,
-                    'domain_id': domain.id,
+                    'domain_id': domain_id,
                     'engine_id': engine_id,
                     'scan_type': LIVE_SCAN,
                     'results_dir': '/usr/src/scan_results',
@@ -331,7 +336,12 @@ def start_multiple_scan(request):
                     # 'imported_subdomains': subdomains_in,
                     # 'out_of_scope_subdomains': subdomains_out
                 }
-                initiate_scan.apply_async(kwargs=kwargs)
+
+                _scan_task = initiate_scan.si(**kwargs)
+                grouped_scans.append(_scan_task)
+
+            celery_group = group(grouped_scans)
+            celery_group.apply_async()
 
             # Send start notif
             messages.add_message(
@@ -339,7 +349,7 @@ def start_multiple_scan(request):
                 messages.INFO,
                 'Scan Started for multiple targets')
 
-            return HttpResponseRedirect(reverse('scan_history'))
+            return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
         else:
             # this else condition will have post request from the scan page
@@ -667,7 +677,7 @@ def visualise(request, id):
 
 
 @has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
-def start_organization_scan(request, id):
+def start_organization_scan(request, id, slug):
     organization = get_object_or_404(Organization, id=id)
     if request.method == "POST":
         engine_id = request.POST['scan_mode']
@@ -675,8 +685,10 @@ def start_organization_scan(request, id):
         # Start Celery task for each organization's domains
         for domain in organization.get_domains():
             scan_history_id = create_scan_object(domain.id, engine_id)
+            scan = ScanHistory.objects.get(pk=scan_history_id)
+
             kwargs = {
-                'scan_history_id': scan_history_id,
+                'scan_history_id': scan.id,
                 'domain_id': domain.id,
                 'engine_id': engine_id,
                 'scan_type': LIVE_SCAN,
@@ -686,6 +698,7 @@ def start_organization_scan(request, id):
                 # 'out_of_scope_subdomains': subdomains_out
             }
             initiate_scan.apply_async(kwargs=kwargs)
+            scan.save()
 
 
         # Send start notif
@@ -694,7 +707,7 @@ def start_organization_scan(request, id):
             request,
             messages.INFO,
             f'Scan Started for {ndomains} domains in organization {organization.name}')
-        return HttpResponseRedirect(reverse('scan_history'))
+        return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
     # GET request
     engine = EngineType.objects.order_by('engine_name')

@@ -862,7 +862,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
 
 class EndpointSerializer(serializers.ModelSerializer):
 
-	technologies = TechnologySerializer(many=True)
+	techs = TechnologySerializer(many=True)
 
 	class Meta:
 		model = EndPoint

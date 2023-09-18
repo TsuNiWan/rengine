@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from django.apps import apps
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -42,6 +43,7 @@ class ScanHistory(models.Model):
 	error_message = models.CharField(max_length=300, blank=True, null=True)
 	emails = models.ManyToManyField('Email', related_name='emails', blank=True)
 	employees = models.ManyToManyField('Employee', related_name='employees', blank=True)
+	buckets = models.ManyToManyField('S3Bucket', related_name='buckets', blank=True)
 	dorks = models.ManyToManyField('Dork', related_name='dorks', blank=True)
 
 	def __str__(self):
@@ -196,6 +198,7 @@ class Subdomain(models.Model):
 	ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True)
 	directories = models.ManyToManyField('DirectoryScan', related_name='directories', blank=True)
 	waf = models.ManyToManyField('Waf', related_name='waf', blank=True)
+	attack_surface = models.TextField(null=True, blank=True)
 
 
 	def __str__(self):
@@ -342,6 +345,7 @@ class EndPoint(models.Model):
 		on_delete=models.CASCADE,
 		null=True,
 		blank=True)
+	source = models.CharField(max_length=200, null=True, blank=True)
 	http_url = models.CharField(max_length=30000)
 	content_length = models.IntegerField(default=0, null=True, blank=True)
 	page_title = models.CharField(max_length=30000, null=True, blank=True)
@@ -352,7 +356,7 @@ class EndPoint(models.Model):
 	webserver = models.CharField(max_length=1000, blank=True, null=True)
 	is_default = models.BooleanField(null=True, blank=True, default=False)
 	matched_gf_patterns = models.CharField(max_length=10000, null=True, blank=True)
-	technologies = models.ManyToManyField('Technology', related_name='technology')
+	techs = models.ManyToManyField('Technology', related_name='techs', null=True, blank=True)
 	# used for subscans
 	endpoint_subscan_ids = models.ManyToManyField('SubScan', related_name='endpoint_subscan_ids', blank=True)
 
@@ -397,7 +401,7 @@ class CweId(models.Model):
 
 
 class GPTVulnerabilityReport(models.Model):
-	url_path = models.CharField(max_length=200)
+	url_path = models.CharField(max_length=2000)
 	title = models.CharField(max_length=2500)
 	description = models.TextField(null=True, blank=True)
 	impact = models.TextField(null=True, blank=True)
@@ -477,6 +481,9 @@ class Vulnerability(models.Model):
 	def get_refs_str(self):
 		return '•' + '\n• '.join(f'`{ref.url}`' for ref in self.references.all())
 
+	def get_path(self):
+		return urlparse(self.http_url).path
+
 
 class ScanActivity(models.Model):
 	id = models.AutoField(primary_key=True)
@@ -501,6 +508,9 @@ class Command(models.Model):
 	return_code = models.IntegerField(blank=True, null=True)
 	output = models.TextField(blank=True, null=True)
 	time = models.DateTimeField()
+
+	def __str__(self):
+		return str(self.command)
 
 
 class Waf(models.Model):
@@ -618,3 +628,24 @@ class Dork(models.Model):
 	type = models.CharField(max_length=500, null=True, blank=True)
 	description = models.CharField(max_length=1500, null=True, blank=True)
 	url = models.CharField(max_length=10000, null=True, blank=True)
+
+
+class S3Bucket(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=500, null=True, blank=True)
+	region = models.CharField(max_length=500, null=True, blank=True)
+	provider = models.CharField(max_length=100, null=True, blank=True)
+	owner_id = models.CharField(max_length=250, null=True, blank=True)
+	owner_display_name = models.CharField(max_length=250, null=True, blank=True)
+	perm_auth_users_read = models.IntegerField(default=0)
+	perm_auth_users_write = models.IntegerField(default=0)
+	perm_auth_users_read_acl = models.IntegerField(default=0)
+	perm_auth_users_write_acl = models.IntegerField(default=0)
+	perm_auth_users_full_control = models.IntegerField(default=0)
+	perm_all_users_read = models.IntegerField(default=0)
+	perm_all_users_write = models.IntegerField(default=0)
+	perm_all_users_read_acl = models.IntegerField(default=0)
+	perm_all_users_write_acl = models.IntegerField(default=0)
+	perm_all_users_full_control = models.IntegerField(default=0)
+	num_objects = models.IntegerField(default=0)
+	size = models.IntegerField(default=0)

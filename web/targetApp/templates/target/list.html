@@ -8,9 +8,6 @@ List all targets
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -48,7 +45,7 @@ Targets
 						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets(slug='{{slug}}')" id="delete_multiple_button">Delete Multiple Targets</a>
 						{% endif %}
 						{% if user|can:'initiate_scans_subscans' %}
-						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
+						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets(slug='{{slug}}')" id="scan_multiple_button">Scan Multiple Targets</a>
 						{% endif %}
 						{% if user|can:'modify_targets' %}
 						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' slug %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
@@ -64,7 +61,7 @@ Targets
 		<div class="card">
 			<form method="POST" id="multiple_targets_form" action="../../scan/start/multiple/">
 				{% csrf_token %}
-				<table id="list_target_table" class="table style-3 table-hover">
+				<table id="list_target_table" class="table dt-responsive w-100">
 					<thead>
 						<tr>
 							<th class="checkbox-column text-center">Serial Number</th>
@@ -87,7 +84,6 @@ Targets
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 $(document).ready(function(){
 	var table = $('#list_target_table').DataTable({
