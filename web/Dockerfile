@@ -122,8 +122,8 @@ RUN chmod +x findomain
 RUN rm findomain-linux-i386.zip
 RUN mv findomain /usr/bin/findomain
 
-# Install
-RUN curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/main/install-nix.sh | bash -s $HOME/.local/bin
+# Install feroxbuster
+RUN curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/main/install-nix.sh | bash -s /usr/bin
 
 
 # Update Nuclei and Nuclei-Templates
@@ -145,6 +145,8 @@ RUN pip3 install sqlmap==1.7.9
 RUN git clone https://github.com/xnl-h4ck3r/waymore.git && \
     cd waymore && \
     python3 setup.py install
+RUN mv waymore /usr/local 
+
 
 # Copy source code
 COPY . /usr/src/app/
