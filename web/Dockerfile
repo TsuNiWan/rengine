@@ -27,7 +27,8 @@ RUN apt update -y && \
     python3-pip
 
 # Install essential packages
-RUN apt install -y  --no-install-recommends \
+RUN apt update -y && \
+    apt install -y --no-install-recommends \
     build-essential \
     cmake \
     firefox \
@@ -43,7 +44,13 @@ RUN apt install -y  --no-install-recommends \
     nmap \
     x11-utils \
     xvfb \
-    wget
+    wget \
+    curl \
+    unzip \
+    ruby \
+    ruby-dev
+
+# RUN gem install bundler
 
 # Download and install go 1.20
 RUN wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
@@ -85,6 +92,40 @@ RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest
 RUN go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
 RUN go install -v github.com/sa7mon/s3scanner@latest 
 
+# Install massdns
+RUN git clone https://github.com/blechschmidt/massdns.git && \
+    cd massdns && \
+    make && \
+    make install
+
+# Install WhatWeb
+# RUN git clone https://github.com/urbanadventurer/WhatWeb.git && \
+#     cd WhatWeb && \
+#     make install
+
+# Install other GO packages
+RUN go install github.com/d3mondev/puredns/v2@latest
+RUN go install -v github.com/projectdiscovery/uncover/cmd/uncover@latest
+RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+RUN go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest
+RUN go install github.com/projectdiscovery/alterx/cmd/alterx@latest
+RUN go install github.com/Josue87/gotator@latest
+RUN go install github.com/channyein1337/jsleak@latest
+RUN go install -v github.com/tomnomnom/anew@latest
+RUN go install github.com/tomnomnom/qsreplace@latest
+RUN go install github.com/tomnomnom/httprobe@latest
+
+# Download and install findomain
+RUN curl -LO https://github.com/findomain/findomain/releases/latest/download/findomain-linux-i386.zip
+RUN unzip findomain-linux-i386.zip
+RUN chmod +x findomain
+RUN rm findomain-linux-i386.zip
+RUN mv findomain /usr/bin/findomain
+
+# Install
+RUN curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/main/install-nix.sh | bash -s $HOME/.local/bin
+
+
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update
 RUN nuclei -update-templates
@@ -93,6 +134,17 @@ RUN nuclei -update-templates
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade setuptools pip && \
     pip3 install -r /tmp/requirements.txt
+
+# Install altdns
+RUN pip3 install py-altdns==1.0.2
+
+# Install sqlmap
+RUN pip3 install sqlmap==1.7.9
+
+# Install WhatWeb
+RUN git clone https://github.com/xnl-h4ck3r/waymore.git && \
+    cd waymore && \
+    python3 setup.py install
 
 # Copy source code
 COPY . /usr/src/app/
