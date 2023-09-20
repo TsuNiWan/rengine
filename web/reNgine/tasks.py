@@ -1283,7 +1283,8 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		if not isinstance(line, dict):
 			continue
 		results.append(line)
-		port_number = line['port']['Port']
+		# port_number = line['port']['Port']
+		port_number = line['port']
 		ip_address = line['ip']
 		host = line.get('host') or ip_address
 		if port_number == 0:
@@ -4002,7 +4003,7 @@ def stream_command(cmd, cwd=None, shell=False, history_file=None, encoding='utf-
 			pass
 
 		# Yield the line
-		#logger.debug(item)
+		logger.debug(item)
 		yield item
 
 		# Add the log line to the output
