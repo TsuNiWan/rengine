@@ -47,10 +47,7 @@ RUN apt update -y && \
     wget \
     curl \
     unzip \
-    ruby \
-    ruby-dev
-
-# RUN gem install bundler
+    whatweb
 
 # Download and install go 1.20
 RUN wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
@@ -98,11 +95,6 @@ RUN git clone https://github.com/blechschmidt/massdns.git && \
     make && \
     make install
 
-# Install WhatWeb
-# RUN git clone https://github.com/urbanadventurer/WhatWeb.git && \
-#     cd WhatWeb && \
-#     make install
-
 # Install other GO packages
 RUN go install github.com/d3mondev/puredns/v2@latest
 RUN go install -v github.com/projectdiscovery/uncover/cmd/uncover@latest
@@ -147,6 +139,11 @@ RUN git clone https://github.com/xnl-h4ck3r/waymore.git && \
     python3 setup.py install
 RUN mv waymore /usr/local 
 
+# Install RustScan
+# COPY ./package/rustscan_2.1.1_amd64.deb /tmp/rustscan_2.1.1_amd64.deb
+# RUN dpkg -i /tmp/rustscan_2.1.1_amd64.deb
+COPY ./package/rustscan /usr/bin/rustscan
+RUN chmod +x /usr/bin/rustscan
 
 # Copy source code
 COPY . /usr/src/app/
