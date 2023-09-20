@@ -140,8 +140,6 @@ RUN git clone https://github.com/xnl-h4ck3r/waymore.git && \
 RUN mv waymore /usr/local 
 
 # Install RustScan
-# COPY ./package/rustscan_2.1.1_amd64.deb /tmp/rustscan_2.1.1_amd64.deb
-# RUN dpkg -i /tmp/rustscan_2.1.1_amd64.deb
 COPY ./package/rustscan /usr/bin/rustscan
 RUN chmod +x /usr/bin/rustscan
 
