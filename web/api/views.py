@@ -564,10 +564,10 @@ class AddTarget(APIView):
 
 
 class FetchSubscanResults(APIView):
-	def post(self, request):
+	def get(self, request):
 		req = self.request
-		data = req.data
-		subscan_id = data['subscan_id']
+		# data = req.data
+		subscan_id = req.query_params.get('subscan_id')
 		subscan = SubScan.objects.filter(id=subscan_id)
 		if not subscan.exists():
 			return Response({
@@ -963,36 +963,43 @@ class GithubToolCheckGetLatestRelease(APIView):
 
 class ScanStatus(APIView):
 	def get(self, request):
+		req = self.request
+		slug = self.request.GET.get('project', None)
 		# main tasks
 		recently_completed_scans = (
 			ScanHistory.objects
-			.all()
+			.filter(domain__project__slug=slug)
 			.order_by('-start_scan_date')
 			.filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:10]
 		)
 		current_scans = (
 			ScanHistory.objects
+			.filter(domain__project__slug=slug)
 			.order_by('-start_scan_date')
 			.filter(scan_status=1)
 		)
 		pending_scans = (
 			ScanHistory.objects
+			.filter(domain__project__slug=slug)
 			.filter(scan_status=-1)
 		)
 
 		# subtasks
 		recently_completed_tasks = (
-			SubScan.objects.all()
+			SubScan.objects
+			.filter(scan_history__domain__project__slug=slug)
 			.order_by('-start_scan_date')
 			.filter(Q(status=0) | Q(status=2) | Q(status=3))[:15]
 		)
 		current_tasks = (
 			SubScan.objects
+			.filter(scan_history__domain__project__slug=slug)
 			.order_by('-start_scan_date')
 			.filter(status=1)
 		)
 		pending_tasks = (
 			SubScan.objects
+			.filter(scan_history__domain__project__slug=slug)
 			.filter(status=-1)
 		)
 		response = {
