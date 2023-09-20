@@ -136,6 +136,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Celery
+DJANGO_CELERY_BEAT_TZ_AWARE=False
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
