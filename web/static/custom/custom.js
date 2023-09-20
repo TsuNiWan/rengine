@@ -938,24 +938,19 @@ function delete_subscan(subscan_id) {
 function show_subscan_results(subscan_id) {
 	// This function will popup a modal and show the subscan results
 	// modal being used is from base
-	var api_url = '/api/fetch/results/subscan/?format=json';
-	var data = {
-		'subscan_id': subscan_id
-	};
+	var api_url = '/api/fetch/results/subscan/?format=json&subscan_id=' + subscan_id;
 	Swal.fire({
 		title: 'Fetching Results...'
 	});
 	swal.showLoading();
 	fetch(api_url, {
-		method: 'POST',
+		method: 'GET',
 		credentials: "same-origin",
 		headers: {
 			"X-CSRFToken": getCookie("csrftoken"),
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify(data)
 	}).then(response => response.json()).then(function(response) {
-		console.log(response);
 		swal.close();
 		if (response['subscan']['status'] == -1) {
 			swal.fire("Error!", "Scan has not yet started! Please wait for other scans to complete...", "warning", {
@@ -963,12 +958,6 @@ function show_subscan_results(subscan_id) {
 			});
 			return;
 		}
-		// else if (response['subscan']['status'] == 1) {
-		// 	swal.fire("Error!", "Scan is in progress! Please come back later...", "warning", {
-		// 		button: "Okay",
-		// 	});
-		// 	return;
-		// }
 		$('#xl-modal-title').empty();
 		$('#xl-modal-content').empty();
 		$('#xl-modal-footer').empty();
@@ -985,7 +974,11 @@ function show_subscan_results(subscan_id) {
 		$('#xl-modal_title').html(`${task_name} Results on ${response['subscan']['subdomain_name']}`);
 		var scan_status = '';
 		var badge_color = 'danger';
-		if (response['subscan']['status'] == 0) {
+		if (response['subscan']['status'] == 1) {
+			var badge_color = 'info';
+			scan_status = 'Running';
+		}
+		else if (response['subscan']['status'] == 0) {
 			scan_status = 'Failed';
 		} else if (response['subscan']['status'] == 2) {
 			scan_status = 'Successful';
@@ -996,23 +989,24 @@ function show_subscan_results(subscan_id) {
 			scan_status = 'Unknown';
 		}
 		$('#xl-modal-content').append(`<div>Scan Status: <span class="badge bg-${badge_color}">${scan_status}</span></div>`);
-		console.log(response);
 		$('#xl-modal-content').append(`<div class="mt-1">Engine Used: <span class="badge bg-primary">${htmlEncode(response['subscan']['engine'])}</span></div>`);
 		if (response['result'].length > 0) {
 			if (response['subscan']['task'] == 'port_scan') {
 				$('#xl-modal-content').append(`<div id="port_results_li"></div>`);
 				for (var ip in response['result']) {
 					var ip_addr = response['result'][ip]['address'];
-					var id_name = `ip_${ip_addr}`;
+					var underscore_ip = ip_addr.replaceAll('.', '_');
+					var id_name = `ip_${underscore_ip}`;
 					$('#port_results_li').append(`<h5>IP Address: ${ip_addr}</br></br>${response['result'][ip]['ports'].length} Ports Open</h5>`);
 					$('#port_results_li').append(`<ul id="${id_name}"></ul>`);
 					for (var port_obj in response['result'][ip]['ports']) {
+						console.log(port_obj);
 						var port = response['result'][ip]['ports'][port_obj];
 						var port_color = 'primary';
 						if (port["is_uncommon"]) {
 							port_color = 'danger';
 						}
-						$('#port_results_li ul').append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['description']}</span></li>`);
+						$(`#${id_name}`).append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['description']}</span></li>`);
 					}
 				}
 				$('#xl-modal-footer').append(`<span class="text-danger">* Uncommon Ports</span>`);
@@ -1143,7 +1137,6 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 		<th>CVSS Score</th>
 		<th>CVE/CWE</th>
 		<th>Vulnerable URL</th>
-		<th>Description</th>
 		<th class="text-center dt-no-sorting">Action</th>
 		</tr>
 		</thead>
@@ -1217,33 +1210,6 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 		}
 		cve_cwe_badge += '</div>';
 		var http_url = vuln_obj['http_url'].includes('http') ? "<a href='" + htmlEncode(vuln_obj['http_url']) + "' target='_blank' class='text-danger'>" + htmlEncode(vuln_obj['http_url']) + "</a>" : vuln_obj['http_url'];
-		var description = vuln_obj['description'] ? `<div>${split_into_lines(vuln_obj['description'], 30)}</div>` : '';
-		// show extracted results, and show matcher names, matcher names can be in badges
-		if (vuln_obj['matcher_name']) {
-			description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${vuln_obj['matcher_name']}</span>`;
-		}
-		if (vuln_obj['extracted_results'] && vuln_obj['extracted_results'].length > 0) {
-			description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${vuln_obj['id']}" aria-expanded="false" aria-controls="results_${vuln_obj['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
-			description += `<div class="collapse" id="results_${vuln_obj['id']}"><ul>`;
-			vuln_obj['extracted_results'].forEach(results => {
-				description += `<li>${results}</li>`;
-			});
-			description += '</ul></div>';
-		}
-		if (vuln_obj['references'] && vuln_obj['references'].length > 0) {
-			description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${vuln_obj['id']}" aria-expanded="false" aria-controls="references_${vuln_obj['id']}">References <i class="fe-chevron-down"></i></a>`;
-			description += `<div class="collapse" id="references_${vuln_obj['id']}"><ul>`;
-			vuln_obj['references'].forEach(reference => {
-				description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
-			});
-			description += '</ul></div>';
-		}
-		if (vuln_obj['curl_command']) {
-			description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${vuln_obj['id']}" aria-expanded="false" aria-controls="curl_command_${vuln_obj['id']}">CURL command <i class="fe-terminal"></i></a>`;
-			description += `<div class="collapse" id="curl_command_${vuln_obj['id']}"><ul>`;
-			description += `<li><code>${split_into_lines(htmlEncode(vuln_obj['curl_command']), 30)}</code></li>`;
-			description += '</ul></div>';
-		}
 		var action_icon = vuln_obj['hackerone_report_id'] ? '' : `
 		<div class="btn-group mb-2 dropstart">
 		<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -1261,7 +1227,6 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 			<td class="text-center">${cvss_score}</td>
 			<td>${cve_cwe_badge}</td>
 			<td>${http_url}</td>
-			<td>${description}</td>
 			<td>${action_icon}</td>
 			</tr>
 		`);
