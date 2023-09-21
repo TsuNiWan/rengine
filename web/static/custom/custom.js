@@ -1,20 +1,20 @@
 function checkall(clickchk, relChkbox) {
 	var checker = $('#' + clickchk);
 	var multichk = $('.' + relChkbox);
-	checker.click(function() {
+	checker.click(function () {
 		multichk.prop('checked', $(this).prop('checked'));
 	});
 }
 
 function multiCheck(tb_var) {
-	tb_var.on("change", ".chk-parent", function() {
-			var e = $(this).closest("table").find("td:first-child .child-chk"),
-				a = $(this).is(":checked");
-			$(e).each(function() {
-				a ? ($(this).prop("checked", !0), $(this).closest("tr").addClass("active")) : ($(this).prop("checked", !1), $(this).closest("tr").removeClass("active"))
-			})
-		}),
-		tb_var.on("change", "tbody tr .new-control", function() {
+	tb_var.on("change", ".chk-parent", function () {
+		var e = $(this).closest("table").find("td:first-child .child-chk"),
+			a = $(this).is(":checked");
+		$(e).each(function () {
+			a ? ($(this).prop("checked", !0), $(this).closest("tr").addClass("active")) : ($(this).prop("checked", !1), $(this).closest("tr").removeClass("active"))
+		})
+	}),
+		tb_var.on("change", "tbody tr .new-control", function () {
 			$(this).parents("tr").toggleClass("active")
 		})
 }
@@ -60,13 +60,13 @@ function getCookie(name) {
 }
 // Source: https://portswigger.net/web-security/cross-site-scripting/preventing#encode-data-on-output
 function htmlEncode(str) {
-	return String(str).replace(/[^\w. ]/gi, function(c) {
+	return String(str).replace(/[^\w. ]/gi, function (c) {
 		return '&#' + c.charCodeAt(0) + ';';
 	});
 }
 // Source: https://portswigger.net/web-security/cross-site-scripting/preventing#encode-data-on-output
 function jsEscape(str) {
-	return String(str).replace(/[^\w. ]/gi, function(c) {
+	return String(str).replace(/[^\w. ]/gi, function (c) {
 		return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
 	});
 }
@@ -81,19 +81,19 @@ function deleteScheduledScan(id) {
 		confirmButtonText: 'Delete',
 		padding: '2em',
 		showLoaderOnConfirm: true,
-		preConfirm: function() {
+		preConfirm: function () {
 			return fetch(delAPI, {
 				method: 'POST',
 				credentials: "same-origin",
 				headers: {
 					"X-CSRFToken": getCookie("csrftoken")
 				}
-			}).then(function(response) {
+			}).then(function (response) {
 				return response.json();
-			}).then(function(data) {
+			}).then(function (data) {
 				// TODO Look for better way
 				return location.reload();
-			}).catch(function() {
+			}).catch(function () {
 				swal.insertQueueStep({
 					icon: 'error',
 					title: 'Oops! Unable to delete the scheduled task!'
@@ -170,7 +170,7 @@ function parse_comma_values_into_span(data, color, outline = null) {
 	if (data) {
 		var badge = `<span class='badge badge-soft-` + color + ` m-1'>`;
 		var data_with_span = "";
-		data.split(/\s*,\s*/).forEach(function(split_vals) {
+		data.split(/\s*,\s*/).forEach(function (split_vals) {
 			data_with_span += badge + split_vals + "</span>";
 		});
 		return data_with_span;
@@ -196,7 +196,7 @@ function get_severity_badge(severity) {
 			return "<span class='badge badge-critical'>&nbsp;&nbsp;CRITICAL&nbsp;&nbsp;</span>";
 			break;
 		case 'Unknown':
-		return "<span class='badge badge-soft-info'>&nbsp;&nbsp;UNKNOWN&nbsp;&nbsp;</span>";
+			return "<span class='badge badge-soft-info'>&nbsp;&nbsp;UNKNOWN&nbsp;&nbsp;</span>";
 		default:
 			return "";
 	}
@@ -204,7 +204,7 @@ function get_severity_badge(severity) {
 // Source: https://stackoverflow.com/a/54733055
 function typingEffect(words, id, i) {
 	let word = words[i].split("");
-	var loopTyping = function() {
+	var loopTyping = function () {
 		if (word.length > 0) {
 			let elem = document.getElementById(id);
 			elem.setAttribute('placeholder', elem.getAttribute('placeholder') + word.shift());
@@ -219,7 +219,7 @@ function typingEffect(words, id, i) {
 
 function deletingEffect(words, id, i) {
 	let word = words[i].split("");
-	var loopDeleting = function() {
+	var loopDeleting = function () {
 		if (word.length > 0) {
 			word.pop();
 			document.getElementById(id).setAttribute('placeholder', word.join(""));
@@ -258,19 +258,19 @@ function delete_all_scan_results() {
 		confirmButtonText: 'Delete',
 		padding: '2em',
 		showLoaderOnConfirm: true,
-		preConfirm: function() {
+		preConfirm: function () {
 			return fetch(delAPI, {
 				method: 'POST',
 				credentials: "same-origin",
 				headers: {
 					"X-CSRFToken": getCookie("csrftoken")
 				}
-			}).then(function(response) {
+			}).then(function (response) {
 				return response.json();
-			}).then(function(data) {
+			}).then(function (data) {
 				// TODO Look for better way
 				return location.reload();
-			}).catch(function() {
+			}).catch(function () {
 				swal.insertQueueStep({
 					icon: 'error',
 					title: 'Oops! Unable to delete Delete scan results!'
@@ -290,19 +290,19 @@ function delete_all_screenshots() {
 		confirmButtonText: 'Delete',
 		padding: '2em',
 		showLoaderOnConfirm: true,
-		preConfirm: function() {
+		preConfirm: function () {
 			return fetch(delAPI, {
 				method: 'POST',
 				credentials: "same-origin",
 				headers: {
 					"X-CSRFToken": getCookie("csrftoken")
 				}
-			}).then(function(response) {
+			}).then(function (response) {
 				return response.json();
-			}).then(function(data) {
+			}).then(function (data) {
 				// TODO Look for better way
 				return location.reload();
-			}).catch(function() {
+			}).catch(function () {
 				swal.insertQueueStep({
 					icon: 'error',
 					title: 'Oops! Unable to delete Empty Screenshots!'
@@ -324,7 +324,7 @@ function setTooltip(btn, message) {
 	const instance = tippy(document.querySelector(btn));
 	instance.setContent(message);
 	instance.show();
-	setTimeout(function() {
+	setTimeout(function () {
 		instance.hide();
 	}, 500);
 }
@@ -346,7 +346,7 @@ function get_response_time_text(response_time) {
 	return '';
 }
 
-function parse_technology(data, color, scan_id = null, domain_id=null) {
+function parse_technology(data, color, scan_id = null, domain_id = null) {
 	var badge = `<span data-toggle="tooltip" title="Technology" class='badge-link badge badge-soft-` + color + ` mt-1 me-1'`;
 	var data_with_span = "";
 	for (var key in data) {
@@ -366,7 +366,7 @@ function parse_ip(data, cdn) {
 		var badge = `<span class='badge badge-soft-primary m-1'>`;
 	}
 	var data_with_span = "";
-	data.split(/\s*,\s*/).forEach(function(split_vals) {
+	data.split(/\s*,\s*/).forEach(function (split_vals) {
 		data_with_span += badge + split_vals + "</span>";
 	});
 	return data_with_span;
@@ -389,16 +389,18 @@ function download(filename, text) {
 function vuln_status_change(checkbox, id) {
 	if (checkbox.checked) {
 		checkbox.parentNode.parentNode.parentNode.className = "table-success text-strike";
+		checkbox.parentNode.parentNode.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.innerHTML = '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
 	} else {
 		checkbox.parentNode.parentNode.parentNode.classList.remove("table-success");
 		checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+		checkbox.parentNode.parentNode.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.innerHTML = '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
 	}
 	change_vuln_status(id);
 }
 
 $("#vulnerability_results").on('click', '.btn-delete-vulnerability', function () {
 	var vulnerability_id = $(this).attr('id');
-	var data = {'vulnerability_ids': [vulnerability_id]};
+	var data = { 'vulnerability_ids': [vulnerability_id] };
 	var row = this;
 	Swal.fire({
 		showCancelButton: true,
@@ -422,24 +424,24 @@ $("#vulnerability_results").on('click', '.btn-delete-vulnerability', function ()
 				},
 				body: JSON.stringify(data)
 			})
-			.then(response => response.json())
-			.then(function (response) {
-				swal.close();
-				if (response['status']) {
-					$(row).parent().parent().parent().remove();
-					Snackbar.show({
-						text: 'Vulnerability successfully deleted!',
-						pos: 'top-right',
-						duration: 2500
-					});
-				}
-				else{
-					Swal.fire({
-						title:  'Could not delete Vulnerability!',
-						icon: 'fail',
-					});
-				}
-			});
+				.then(response => response.json())
+				.then(function (response) {
+					swal.close();
+					if (response['status']) {
+						$(row).parent().parent().parent().remove();
+						Snackbar.show({
+							text: 'Vulnerability successfully deleted!',
+							pos: 'top-right',
+							duration: 2500
+						});
+					}
+					else {
+						Swal.fire({
+							title: 'Could not delete Vulnerability!',
+							icon: 'fail',
+						});
+					}
+				});
 		}
 	});;
 	$('a[data-toggle="tooltip"]').tooltip("hide")
@@ -462,16 +464,16 @@ function report_hackerone(vulnerability_id, severity) {
 		confirmButtonText: 'Report',
 		padding: '2em',
 		showLoaderOnConfirm: true,
-		preConfirm: function() {
+		preConfirm: function () {
 			return fetch(vulnerability_report_api, {
 				method: 'GET',
 				credentials: "same-origin",
 				headers: {
 					"X-CSRFToken": getCookie("csrftoken")
 				}
-			}).then(function(response) {
+			}).then(function (response) {
 				return response.json();
-			}).then(function(data) {
+			}).then(function (data) {
 				console.log(data.status)
 				if (data.status == 111) {
 					swal.insertQueueStep({
@@ -504,7 +506,7 @@ function report_hackerone(vulnerability_id, severity) {
 						title: 'Too many requests.'
 					})
 				}
-			}).catch(function() {
+			}).catch(function () {
 				swal.insertQueueStep({
 					icon: 'error',
 					title: 'Oops! Unable to send vulnerability report to hackerone, check your target team_handle or hackerone configurarions!'
@@ -524,7 +526,7 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 	}
 	console.log(url);
 	var interesting_subdomain_table = $('#interesting_subdomains').DataTable({
-		"drawCallback": function(settings, start, end, max, total, pre) {
+		"drawCallback": function (settings, start, end, max, total, pre) {
 			// if no interesting subdomains are found, hide the datatable and show no interesting subdomains found badge
 			if (this.fnSettings().fnRecordsTotal() == 0) {
 				$('#interesting_subdomain_div').empty();
@@ -581,7 +583,7 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 			'data': 'http_url'
 		}, {
 			'data': 'technologies'
-		}, ],
+		},],
 		"columnDefs": [{
 			"orderable": false,
 			"targets": non_orderable_targets
@@ -597,7 +599,7 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 			"className": "text-center",
 			"targets": [2]
 		}, {
-			"render": function(data, type, row) {
+			"render": function (data, type, row) {
 				tech_badge = '';
 				if (row['technologies']) {
 					// tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true, scan_id=null);
@@ -609,7 +611,7 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 			},
 			"targets": 0
 		}, {
-			"render": function(data, type, row) {
+			"render": function (data, type, row) {
 				// display badge based on http status
 				// green for http status 2XX, orange for 3XX and warning for everything else
 				if (data >= 200 && data < 300) {
@@ -623,7 +625,7 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 				return `<span class='badge badge-pills badge-soft-danger'>` + data + `</span>`;
 			},
 			"targets": 2,
-		}, ],
+		},],
 	});
 }
 
@@ -637,7 +639,7 @@ function get_interesting_endpoints(project, target_id, scan_history_id) {
 		// non_orderable_targets = [0, 1, 2, 3];
 	}
 	$('#interesting_endpoints').DataTable({
-		"drawCallback": function(settings, start, end, max, total, pre) {
+		"drawCallback": function (settings, start, end, max, total, pre) {
 			if (this.fnSettings().fnRecordsTotal() == 0) {
 				$('#interesting_endpoint_div').remove();
 			} else {
@@ -676,7 +678,7 @@ function get_interesting_endpoints(project, target_id, scan_history_id) {
 			'data': 'http_status'
 		}, {
 			'data': 'content_length'
-		}, ],
+		},],
 		"columnDefs": [{
 			"orderable": false,
 			"targets": non_orderable_targets
@@ -684,13 +686,13 @@ function get_interesting_endpoints(project, target_id, scan_history_id) {
 			"className": "text-center",
 			"targets": [2]
 		}, {
-			"render": function(data, type, row) {
+			"render": function (data, type, row) {
 				var url = split_into_lines(data, 70);
 				return "<a href='" + data + "' target='_blank' class='text-primary'>" + url + "</a>";
 			},
 			"targets": 0
 		}, {
-			"render": function(data, type, row) {
+			"render": function (data, type, row) {
 				// display badge based on http status
 				// green for http status 2XX, orange for 3XX and warning for everything else
 				if (data >= 200 && data < 300) {
@@ -704,7 +706,7 @@ function get_interesting_endpoints(project, target_id, scan_history_id) {
 				return `<span class='badge badge-pills badge-soft-danger'>` + data + `</span>`;
 			},
 			"targets": 2,
-		}, ],
+		},],
 	});
 }
 
@@ -715,7 +717,7 @@ function get_important_subdomains(target_id, scan_history_id) {
 	} else if (scan_history_id) {
 		url += `&scan_id=${scan_history_id}`;
 	}
-	$.getJSON(url, function(data) {
+	$.getJSON(url, function (data) {
 		$('#important-count').empty();
 		$('#important-subdomains-list').empty();
 		if (data['subdomains'].length > 0) {
@@ -755,7 +757,7 @@ function mark_important_subdomain(row, subdomain_id) {
 		}
 	}
 
-	var data = {'subdomain_id': subdomain_id}
+	var data = { 'subdomain_id': subdomain_id }
 
 	const subdomainImpApi = "/api/toggle/subdomain/important/";
 
@@ -787,19 +789,19 @@ function delete_scan(id) {
 		confirmButtonText: 'Delete',
 		padding: '2em',
 		showLoaderOnConfirm: true,
-		preConfirm: function() {
+		preConfirm: function () {
 			return fetch(delAPI, {
 				method: 'POST',
 				credentials: "same-origin",
 				headers: {
 					"X-CSRFToken": getCookie("csrftoken")
 				}
-			}).then(function(response) {
+			}).then(function (response) {
 				return response.json();
-			}).then(function(data) {
+			}).then(function (data) {
 				// TODO Look for better way
 				return location.reload();
-			}).catch(function() {
+			}).catch(function () {
 				swal.insertQueueStep({
 					icon: 'error',
 					title: 'Oops! Unable to delete the scan history!'
@@ -809,14 +811,14 @@ function delete_scan(id) {
 	}]);
 }
 
-function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_location=false) {
+function stop_scan(scan_id = null, subscan_id = null, reload_scan_bar = true, reload_location = false) {
 	const stopAPI = "/api/action/stop/scan/";
 
 	if (scan_id) {
-		var data = {'scan_id': scan_id}
+		var data = { 'scan_id': scan_id }
 	}
 	else if (subscan_id) {
-		var data = {'subscan_id': subscan_id}
+		var data = { 'subscan_id': subscan_id }
 	}
 	swal.queue([{
 		title: 'Are you sure you want to stop this scan?',
@@ -826,7 +828,7 @@ function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_l
 		confirmButtonText: 'Stop',
 		padding: '2em',
 		showLoaderOnConfirm: true,
-		preConfirm: function() {
+		preConfirm: function () {
 			return fetch(stopAPI, {
 				method: 'POST',
 				credentials: "same-origin",
@@ -835,9 +837,9 @@ function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_l
 					"X-CSRFToken": getCookie("csrftoken"),
 					"Content-Type": 'application/json',
 				}
-			}).then(function(response) {
+			}).then(function (response) {
 				return response.json();
-			}).then(function(data) {
+			}).then(function (data) {
 				// TODO Look for better way
 				if (data.status) {
 					Snackbar.show({
@@ -858,7 +860,7 @@ function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_l
 						duration: 1500
 					});
 				}
-			}).catch(function() {
+			}).catch(function () {
 				swal.insertQueueStep({
 					icon: 'error',
 					title: 'Oops! Unable to stop the scan'
@@ -910,7 +912,7 @@ function delete_subscan(subscan_id) {
 		confirmButtonText: 'Delete',
 		padding: '2em',
 		showLoaderOnConfirm: true,
-		preConfirm: function() {
+		preConfirm: function () {
 			return fetch(delAPI, {
 				method: 'POST',
 				credentials: "same-origin",
@@ -919,13 +921,13 @@ function delete_subscan(subscan_id) {
 					"Content-Type": "application/json"
 				},
 				body: JSON.stringify(data)
-			}).then(function(response) {
+			}).then(function (response) {
 				return response.json();
-			}).then(function(response) {
+			}).then(function (response) {
 				if (response['status']) {
 					delete_datatable_rows('#subscan_history_table', [subscan_id], show_snackbar = true, '1 Subscan Deleted!')
 				}
-			}).catch(function() {
+			}).catch(function () {
 				swal.insertQueueStep({
 					icon: 'error',
 					title: 'Oops! Unable to delete the scan history!'
@@ -950,7 +952,7 @@ function show_subscan_results(subscan_id) {
 			"X-CSRFToken": getCookie("csrftoken"),
 			'Content-Type': 'application/json'
 		},
-	}).then(response => response.json()).then(function(response) {
+	}).then(response => response.json()).then(function (response) {
 		swal.close();
 		if (response['subscan']['status'] == -1) {
 			swal.fire("Error!", "Scan has not yet started! Please wait for other scans to complete...", "warning", {
@@ -1094,7 +1096,7 @@ function render_endpoint_in_xlmodal(endpoint_count, subdomain_name, result) {
 			<td>${http_url_td}</td>
 			<td>${get_http_status_badge(endpoint['http_status'])}</td>
 			<td>${return_str_if_not_null(endpoint['page_title'])}</td>
-			<td>${parse_comma_values_into_span(endpoint['matched_gf_patterns'], "danger", outline=true)}</td>
+			<td>${parse_comma_values_into_span(endpoint['matched_gf_patterns'], "danger", outline = true)}</td>
 			<td>${return_str_if_not_null(endpoint['content_type'])}</td>
 			<td>${return_str_if_not_null(endpoint['content_length'])}</td>
 			<td>${get_response_time_text(endpoint['response_time'])}</td>
@@ -1116,7 +1118,7 @@ function render_endpoint_in_xlmodal(endpoint_count, subdomain_name, result) {
 		"order": [
 			[5, "desc"]
 		],
-		drawCallback: function() {
+		drawCallback: function () {
 			$(".dataTables_paginate > .pagination").addClass("pagination-rounded")
 		}
 	});
@@ -1246,7 +1248,7 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 		"order": [
 			[5, "desc"]
 		],
-		drawCallback: function() {
+		drawCallback: function () {
 			$(".dataTables_paginate > .pagination").addClass("pagination-rounded")
 		}
 	});
@@ -1300,7 +1302,7 @@ function render_directories_in_xl_modal(directory_count, subdomain_name, result)
 		"order": [
 			[2, "desc"]
 		],
-		drawCallback: function() {
+		drawCallback: function () {
 			$(".dataTables_paginate > .pagination").addClass("pagination-rounded");
 		}
 	});
@@ -1332,9 +1334,9 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 			"X-CSRFToken": getCookie("csrftoken"),
 			"Content-Type": 'application/json',
 		}
-	}).then(function(response) {
+	}).then(function (response) {
 		return response.json();
-	}).then(function(data) {
+	}).then(function (data) {
 		console.log(data);
 		if (data['status']) {
 			$('#modal_title').html('Subscan History for subdomain ' + subdomain_name);
@@ -1392,12 +1394,12 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 	});
 }
 
-function fetch_whois(domain_name, force_reload_whois=false) {
+function fetch_whois(domain_name, force_reload_whois = false) {
 	// this function will fetch WHOIS record for any subdomain and also display
 	// snackbar once whois is fetched
 	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
 	if (force_reload_whois) {
-		url+='&is_reload=true'
+		url += '&is_reload=true'
 	}
 	$('[data-toggle="tooltip"]').tooltip('hide');
 	Snackbar.show({
@@ -1408,7 +1410,7 @@ function fetch_whois(domain_name, force_reload_whois=false) {
 	$("#whois_not_fetched_alert").hide();
 	$("#whois_fetching_alert").show();
 	fetch(url, {}).then(res => res.json())
-		.then(function(response) {
+		.then(function (response) {
 			$("#whois_fetching_alert").hide();
 			document.getElementById('domain_age').innerHTML = response['domain']['domain_age'] + ' ' + response['domain']['date_created'];
 			document.getElementById('ip_address').innerHTML = response['domain']['ip_address'];
@@ -1429,11 +1431,11 @@ function fetch_whois(domain_name, force_reload_whois=false) {
 
 			$("#whois_fetched_alert").show();
 
-			$("#whois_fetched_alert").fadeTo(2000, 500).slideUp(1500, function() {
+			$("#whois_fetched_alert").fadeTo(2000, 500).slideUp(1500, function () {
 				$("#whois_fetched_alert").slideUp(500);
 			});
 
-		}).catch(function(error) {
+		}).catch(function (error) {
 			console.log(error);
 		});
 }
@@ -1451,7 +1453,7 @@ function get_target_whois(domain_name) {
 			"X-CSRFToken": getCookie("csrftoken"),
 			'Content-Type': 'application/json'
 		},
-	}).then(response => response.json()).then(function(response) {
+	}).then(response => response.json()).then(function (response) {
 		console.log(response);
 		if (response.status) {
 			swal.close();
@@ -1464,7 +1466,7 @@ function get_target_whois(domain_name) {
 					"X-CSRFToken": getCookie("csrftoken"),
 					'Content-Type': 'application/json'
 				},
-			}).then(response => response.json()).then(function(response) {
+			}).then(response => response.json()).then(function (response) {
 				console.log(response);
 				if (response.status) {
 					swal.close();
@@ -1481,7 +1483,7 @@ function get_target_whois(domain_name) {
 	});
 }
 
-function get_domain_whois(domain_name, show_add_target_btn=false) {
+function get_domain_whois(domain_name, show_add_target_btn = false) {
 	// this function will get whois for domains that are not targets, this will
 	// not store whois into db nor create target
 	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`
@@ -1497,10 +1499,10 @@ function get_domain_whois(domain_name, show_add_target_btn=false) {
 			"X-CSRFToken": getCookie("csrftoken"),
 			'Content-Type': 'application/json'
 		},
-	}).then(response => response.json()).then(function(response) {
+	}).then(response => response.json()).then(function (response) {
 		swal.close();
 		if (response.status) {
-			display_whois_on_modal(response, show_add_target_btn=show_add_target_btn);
+			display_whois_on_modal(response, show_add_target_btn = show_add_target_btn);
 		} else {
 			Swal.fire({
 				title: 'Oops!',
@@ -1511,7 +1513,7 @@ function get_domain_whois(domain_name, show_add_target_btn=false) {
 	});
 }
 
-function display_whois_on_modal(response, show_add_target_btn=false) {
+function display_whois_on_modal(response, show_add_target_btn = false) {
 	console.log(response);
 	// this function will display whois data on modal, should be followed after get_domain_whois()
 	$('#modal_dialog').modal('show');
@@ -1584,16 +1586,16 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 					</div>
 				</div>`;
 
-				for (var status in response.status) {
-					var status_object = response.status[status];
-					if (status_object.includes('prohibited')) {
-						content += `<span class="badge badge-soft-danger me-1 mt-1">${status_object}</span>`;
-					}
-					else {
-						content += `<span class="badge badge-soft-info mt-1 me-1">${status_object}</span>`;
-					}
-				}
-				content += `
+	for (var status in response.status) {
+		var status_object = response.status[status];
+		if (status_object.includes('prohibited')) {
+			content += `<span class="badge badge-soft-danger me-1 mt-1">${status_object}</span>`;
+		}
+		else {
+			content += `<span class="badge badge-soft-info mt-1 me-1">${status_object}</span>`;
+		}
+	}
+	content += `
 				</div>
 				<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
 					<ul class="nav nav-tabs nav-bordered nav-justified">
@@ -1737,27 +1739,27 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 					</div>
 				</div>`;
 
-				content += `
+	content += `
 				<div class="tab-pane fade" id="v-pills-dns" role="tabpanel" aria-labelledby="v-pills-dns-tab" data-simplebar style="min-height: 300px;">
 					<h4>A Records</h4>`;
-					for (var a in response.dns.a) {
-						var a_object = response.dns.a[a];
-						content += `<span class="badge badge-soft-primary me-1 mt-1">${a_object}</span>`;
-					}
-					content += `<h4>MX Records</h4>`;
+	for (var a in response.dns.a) {
+		var a_object = response.dns.a[a];
+		content += `<span class="badge badge-soft-primary me-1 mt-1">${a_object}</span>`;
+	}
+	content += `<h4>MX Records</h4>`;
 
-					for (var mx in response.dns.mx) {
-						var mx_object = response.dns.mx[mx];
-						content += `<span class="badge badge-soft-primary me-1 mt-1">${mx_object}</span>`;
-					}
-					content += `<h4>TXT Records</h4>`;
-					for (var txt in response.dns.txt) {
-						var txt_object = response.dns.txt[txt];
-						content += `<span class="badge badge-soft-secondary me-1 mt-1">${txt_object}</span>`;
-					}
-					content += `</div>`;
+	for (var mx in response.dns.mx) {
+		var mx_object = response.dns.mx[mx];
+		content += `<span class="badge badge-soft-primary me-1 mt-1">${mx_object}</span>`;
+	}
+	content += `<h4>TXT Records</h4>`;
+	for (var txt in response.dns.txt) {
+		var txt_object = response.dns.txt[txt];
+		content += `<span class="badge badge-soft-secondary me-1 mt-1">${txt_object}</span>`;
+	}
+	content += `</div>`;
 
-					content += `<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+	content += `<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 						<div class="alert alert-success">${response.historical_ips.length} Historical Ips</div>
 						<table id="basic-datatable" class="table dt-responsive w-100">
 							<thead>
@@ -1770,58 +1772,58 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 							</thead>
 							<tbody>`;
 
-							for (var ip in response.historical_ips) {
-								var ip_object = response.historical_ips[ip];
-								content += `<tr>
+	for (var ip in response.historical_ips) {
+		var ip_object = response.historical_ips[ip];
+		content += `<tr>
 									<td><b>${ip_object.ip}</b></td>
 									<td>${ip_object.location}</td>
 									<td>${ip_object.owner}</td>
 									<td>${ip_object.last_seen}</td>
 								</tr>`;
-							}
+	}
 
-							content +=`
+	content += `
 							</tbody>
 						</table>
 					</div>`;
 
-					content += `<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+	content += `<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
 
-					content += `<div class="alert alert-success">${response.nameservers.length} NameServers identified</div>`;
+	content += `<div class="alert alert-success">${response.nameservers.length} NameServers identified</div>`;
 
-					for (var ns in response.nameservers) {
-						var ns_object = response.nameservers[ns];
-						content += `<span class="badge badge-soft-primary me-1 mt-1">${ns_object}</span>`;
-					}
+	for (var ns in response.nameservers) {
+		var ns_object = response.nameservers[ns];
+		content += `<span class="badge badge-soft-primary me-1 mt-1">${ns_object}</span>`;
+	}
 
-					content += `</div><div class="tab-pane fade" id="v-pills-similar" role="tabpanel" aria-labelledby="v-pills-similar-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+	content += `</div><div class="tab-pane fade" id="v-pills-similar" role="tabpanel" aria-labelledby="v-pills-similar-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
 
-					if (response.related_tlds.length > 0) {
-						for (var domain in response.related_tlds) {
-							var dom_object = response.related_tlds[domain];
-							content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${dom_object} as target." onclick="add_target('${dom_object}')">${dom_object}</span>`;
-						}
-					}
-					else{
-						content += `<div class="alert alert-info">No Related TLDs identified</div>`
-					}
-					content += `</div>`
+	if (response.related_tlds.length > 0) {
+		for (var domain in response.related_tlds) {
+			var dom_object = response.related_tlds[domain];
+			content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${dom_object} as target." onclick="add_target('${dom_object}')">${dom_object}</span>`;
+		}
+	}
+	else {
+		content += `<div class="alert alert-info">No Related TLDs identified</div>`
+	}
+	content += `</div>`
 
 
-					content += `<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+	content += `<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
 
-					if (response.related_domains.length > 0) {
-						for (var domain in response.related_domains) {
-							var dom_object = response.related_domains[domain];
-							content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${dom_object} as target." onclick="add_target('${dom_object}')">${dom_object}</span>`;
-						}
-					}
-					else{
-						content += `<div class="alert alert-info">No Related Domains identified</div>`
-					}
-					content += `</div>`
+	if (response.related_domains.length > 0) {
+		for (var domain in response.related_domains) {
+			var dom_object = response.related_domains[domain];
+			content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${dom_object} as target." onclick="add_target('${dom_object}')">${dom_object}</span>`;
+		}
+	}
+	else {
+		content += `<div class="alert alert-info">No Related Domains identified</div>`
+	}
+	content += `</div>`
 
-		content += `
+	content += `
 			</div>
 		</div>
 	</div>`;
@@ -1893,7 +1895,7 @@ function add_target(domain_name, h1_handle = null, description = null) {
 		confirmButtonText: 'Add Target',
 		padding: '2em',
 		showLoaderOnConfirm: true,
-		preConfirm: function() {
+		preConfirm: function () {
 			return fetch(add_api, {
 				method: 'POST',
 				credentials: "same-origin",
@@ -1902,10 +1904,10 @@ function add_target(domain_name, h1_handle = null, description = null) {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify(data)
-			}).then(function(response) {
+			}).then(function (response) {
 				console.log(response)
 				return response.json();
-			}).then(function(data) {
+			}).then(function (data) {
 				console.log(data)
 				if (data.status) {
 					swal.queue([{
@@ -1916,7 +1918,7 @@ function add_target(domain_name, h1_handle = null, description = null) {
 						confirmButtonText: 'Initiate Scan',
 						padding: '2em',
 						showLoaderOnConfirm: true,
-						preConfirm: function() {
+						preConfirm: function () {
 							window.location = `/scan/start/${data.domain_id}`;
 						}
 					}]);
@@ -1926,7 +1928,7 @@ function add_target(domain_name, h1_handle = null, description = null) {
 						title: data.message
 					});
 				}
-			}).catch(function() {
+			}).catch(function () {
 				swal.insertQueueStep({
 					icon: 'error',
 					title: 'Oops! Unable to add target !'
@@ -1959,9 +1961,9 @@ function loadSubscanHistoryWidget(scan_history_id = null, domain_id = null) {
 			"X-CSRFToken": getCookie("csrftoken"),
 			"Content-Type": 'application/json',
 		}
-	}).then(function(response) {
+	}).then(function (response) {
 		return response.json();
-	}).then(function(data) {
+	}).then(function (data) {
 		console.log(data);
 		$('#subscan_history_widget').empty();
 		if (data['status']) {
@@ -2025,7 +2027,7 @@ function loadSubscanHistoryWidget(scan_history_id = null, domain_id = null) {
 	});
 }
 
-function get_ips(scan_id=null, domain_id=null){
+function get_ips(scan_id = null, domain_id = null) {
 	// this function will fetch and render ips in widget
 	var url = '/api/queryIps/?';
 
@@ -2039,9 +2041,9 @@ function get_ips(scan_id=null, domain_id=null){
 
 	url += `&format=json`;
 
-	$.getJSON(url, function(data) {
+	$.getJSON(url, function (data) {
 		$('#ip-address-count').empty();
-		for (var val in data['ips']){
+		for (var val in data['ips']) {
 			ip = data['ips'][val]
 			badge_color = ip['is_cdn'] ? 'warning' : 'primary';
 			if (scan_id) {
@@ -2058,7 +2060,7 @@ function get_ips(scan_id=null, domain_id=null){
 }
 
 
-function get_technologies(scan_id=null, domain_id=null){
+function get_technologies(scan_id = null, domain_id = null) {
 	// this function will fetch and render tech in widget
 	var url = '/api/queryTechnologies/?';
 
@@ -2072,9 +2074,9 @@ function get_technologies(scan_id=null, domain_id=null){
 
 	url += `&format=json`;
 
-	$.getJSON(url, function(data) {
+	$.getJSON(url, function (data) {
 		$('#technologies-count').empty();
-		for (var val in data['technologies']){
+		for (var val in data['technologies']) {
 			tech = data['technologies'][val]
 			if (scan_id) {
 				$("#technologies").append(`<span class='badge badge-soft-primary  m-1 badge-link' data-toggle="tooltip" title="${tech['count']} Subdomains use this technology." onclick="get_tech_details('${tech['name']}', scan_id=${scan_id}, domain_id=null)">${tech['name']}</span>`);
@@ -2089,7 +2091,7 @@ function get_technologies(scan_id=null, domain_id=null){
 }
 
 
-function get_ports(scan_id=null, domain_id=null){
+function get_ports(scan_id = null, domain_id = null) {
 	// this function will fetch and render ports in widget
 	var url = '/api/queryPorts/?';
 
@@ -2102,15 +2104,15 @@ function get_ports(scan_id=null, domain_id=null){
 	}
 
 	url += `&format=json`;
-	$.getJSON(url, function(data) {
+	$.getJSON(url, function (data) {
 		$('#ports-count').empty();
-		for (var val in data['ports']){
+		for (var val in data['ports']) {
 			port = data['ports'][val]
 			badge_color = port['is_uncommon'] ? 'danger' : 'primary';
 			if (scan_id) {
 				$("#ports").append(`<span class='badge badge-soft-${badge_color}  m-1 badge-link' data-toggle="tooltip" title="${port['description']}" onclick="get_port_details('${port['number']}', scan_id=${scan_id}, domain_id=null)">${port['number']}/${port['service_name']}</span>`);
 			}
-			else if (domain_id){
+			else if (domain_id) {
 				$("#ports").append(`<span class='badge badge-soft-${badge_color}  m-1 badge-link' data-toggle="tooltip" title="${port['description']}" onclick="get_port_details('${port['number']}', scan_id=null, domain_id=${domain_id})">${port['number']}/${port['service_name']}</span>`);
 			}
 		}
@@ -2120,7 +2122,7 @@ function get_ports(scan_id=null, domain_id=null){
 }
 
 
-function get_ip_details(ip_address, scan_id=null, domain_id=null){
+function get_ip_details(ip_address, scan_id = null, domain_id = null) {
 	var port_url = `/api/queryPorts/?ip_address=${ip_address}`;
 	var subdomain_url = `/api/querySubdomains/?ip_address=${ip_address}`;
 
@@ -2128,7 +2130,7 @@ function get_ip_details(ip_address, scan_id=null, domain_id=null){
 		port_url += `&scan_id=${scan_id}`;
 		subdomain_url += `&scan_id=${scan_id}`;
 	}
-	else if(domain_id){
+	else if (domain_id) {
 		port_url += `&target_id=${domain_id}`;
 		subdomain_url += `&target_id=${domain_id}`;
 	}
@@ -2162,11 +2164,11 @@ function get_ip_details(ip_address, scan_id=null, domain_id=null){
 	$('#modal_content_port').append(`<ul id="modal_port_ul"></ul>`);
 	$('#modal_content_subdomain').append(`<ul id="modal_subdomain_ul"></ul>`);
 
-	$.getJSON(port_url, function(data) {
+	$.getJSON(port_url, function (data) {
 		$('#modal_content_port').empty();
 		$('#modal_content_port').append(`<p> IP Addresses ${ip_address} has ${data['ports'].length} Open Ports`);
 		$('#modal-open-ports-count').html(`<b>${data['ports'].length}</b>&nbsp;&nbsp;`);
-		for (port in data['ports']){
+		for (port in data['ports']) {
 			port_obj = data['ports'][port];
 			badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
 			$("#modal_content_port").append(`<li class="mt-1">${port_obj['description']} <b class="text-${badge_color}">(${port_obj['number']}/${port_obj['service_name']})</b></li>`)
@@ -2177,11 +2179,11 @@ function get_ip_details(ip_address, scan_id=null, domain_id=null){
 	$('#modal_dialog').modal('show');
 
 	// query subdomains
-	$.getJSON(subdomain_url, function(data) {
+	$.getJSON(subdomain_url, function (data) {
 		$('#modal_content_subdomain').empty();
 		$('#modal_content_subdomain').append(`<p>${data['subdomains'].length} Subdomains are associated with IP ${ip_address}`);
 		$('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
-		for (subdomain in data['subdomains']){
+		for (subdomain in data['subdomains']) {
 			subdomain_obj = data['subdomains'][subdomain];
 			badge_color = subdomain_obj['http_status'] >= 400 ? 'danger' : '';
 			li_id = get_randid();
@@ -2193,12 +2195,12 @@ function get_ip_details(ip_address, scan_id=null, domain_id=null){
 			}
 
 			if (subdomain_obj['http_status']) {
-				$("#"+li_id).append(get_http_badge(subdomain_obj['http_status']));
+				$("#" + li_id).append(get_http_badge(subdomain_obj['http_status']));
 				$('.bs-tooltip').tooltip();
 			}
 
 			if (subdomain_obj['is_interesting']) {
-				$("#"+li_id).append(interesting_badge)
+				$("#" + li_id).append(interesting_badge)
 			}
 
 		}
@@ -2207,7 +2209,7 @@ function get_ip_details(ip_address, scan_id=null, domain_id=null){
 	});
 }
 
-function get_port_details(port, scan_id=null, domain_id=null){
+function get_port_details(port, scan_id = null, domain_id = null) {
 
 	var ip_url = `/api/queryIps/?port=${port}`;
 	var subdomain_url = `/api/querySubdomains/?port=${port}`;
@@ -2216,7 +2218,7 @@ function get_port_details(port, scan_id=null, domain_id=null){
 		ip_url += `&scan_id=${scan_id}`;
 		subdomain_url += `&scan_id=${scan_id}`;
 	}
-	else if(domain_id){
+	else if (domain_id) {
 		ip_url += `&target_id=${domain_id}`;
 		subdomain_url += `&target_id=${domain_id}`;
 	}
@@ -2247,11 +2249,11 @@ function get_port_details(port, scan_id=null, domain_id=null){
 
 	$('#modal_dialog').modal('show');
 
-	$.getJSON(ip_url, function(data) {
+	$.getJSON(ip_url, function (data) {
 		$('#modal_ip_ul').empty();
 		$('#modal_ip_ul').append(`<p>${data['ips'].length} IP Addresses have Port ${port} Open`);
 		$('#modal-ip-count').html(`<b>${data['ips'].length}</b>&nbsp;&nbsp;`);
-		for (ip in data['ips']){
+		for (ip in data['ips']) {
 			ip_obj = data['ips'][ip];
 			text_color = ip_obj['is_cdn'] ? 'warning' : '';
 			$("#modal_ip_ul").append(`<li class='mt-1 text-${text_color}'>${ip_obj['address']}</li>`)
@@ -2261,11 +2263,11 @@ function get_port_details(port, scan_id=null, domain_id=null){
 	});
 
 	// query subdomains
-	$.getJSON(subdomain_url, function(data) {
+	$.getJSON(subdomain_url, function (data) {
 		$('#modal_subdomain_ul').empty();
 		$('#modal_subdomain_ul').append(`<p>${data['subdomains'].length} Subdomains have Port ${port} Open`);
 		$('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
-		for (subdomain in data['subdomains']){
+		for (subdomain in data['subdomains']) {
 			subdomain_obj = data['subdomains'][subdomain];
 			badge_color = subdomain_obj['http_status'] >= 400 ? 'danger' : '';
 			li_id = get_randid();
@@ -2277,12 +2279,12 @@ function get_port_details(port, scan_id=null, domain_id=null){
 			}
 
 			if (subdomain_obj['http_status']) {
-				$("#"+li_id).append(get_http_badge(subdomain_obj['http_status']));
+				$("#" + li_id).append(get_http_badge(subdomain_obj['http_status']));
 				$('.bs-tooltip').tooltip();
 			}
 
 			if (subdomain_obj['is_interesting']) {
-				$("#"+li_id).append(interesting_badge)
+				$("#" + li_id).append(interesting_badge)
 			}
 
 		}
@@ -2291,14 +2293,14 @@ function get_port_details(port, scan_id=null, domain_id=null){
 	});
 }
 
-function get_tech_details(tech, scan_id=null, domain_id=null){
+function get_tech_details(tech, scan_id = null, domain_id = null) {
 
 	var url = `/api/querySubdomains/?tech=${tech}`;
 
 	if (scan_id) {
 		url += `&scan_id=${scan_id}`;
 	}
-	else if(domain_id){
+	else if (domain_id) {
 		url += `&target_id=${domain_id}`;
 	}
 
@@ -2313,11 +2315,11 @@ function get_tech_details(tech, scan_id=null, domain_id=null){
 	$('#modal-footer').empty();
 	$('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
 	// query subdomains
-	$.getJSON(url, function(data) {
+	$.getJSON(url, function (data) {
 		$('#modal-loader').empty();
 		$('#modal-content').empty();
 		$('#modal-content').append(`${data['subdomains'].length} Subdomains are using ${tech}`);
-		for (subdomain in data['subdomains']){
+		for (subdomain in data['subdomains']) {
 			subdomain_obj = data['subdomains'][subdomain];
 			badge_color = subdomain_obj['http_status'] >= 400 ? 'danger' : '';
 			li_id = get_randid();
@@ -2329,36 +2331,36 @@ function get_tech_details(tech, scan_id=null, domain_id=null){
 			}
 
 			if (subdomain_obj['http_status']) {
-				$("#"+li_id).append(get_http_badge(subdomain_obj['http_status']));
+				$("#" + li_id).append(get_http_badge(subdomain_obj['http_status']));
 				$('.bs-tooltip').tooltip();
 			}
 
 			if (subdomain_obj['is_interesting']) {
-				$("#"+li_id).append(interesting_badge)
+				$("#" + li_id).append(interesting_badge)
 			}
 
 		}
 		$("#modal-content").append(`<span class="float-end text-danger">*Subdomains highlighted are 40X HTTP Status</span>`);
 		$("#subdomain-modal-loader").remove();
-	}).fail(function(){
+	}).fail(function () {
 		$('#modal-loader').empty();
 	});
 }
 
 
-function get_http_badge(http_status){
+function get_http_badge(http_status) {
 	switch (true) {
 		case (http_status >= 400):
-		badge_color = 'danger'
-		break;
+			badge_color = 'danger'
+			break;
 		case (http_status >= 300):
-		badge_color = 'warning'
-		break;
+			badge_color = 'warning'
+			break;
 		case (http_status >= 200):
-		badge_color = 'success'
-		break;
+			badge_color = 'success'
+			break;
 		default:
-		badge_color = 'danger'
+			badge_color = 'danger'
 	}
 	if (http_status) {
 		badge = `<span class="badge badge-soft-${badge_color} me-1 ms-1 bs-tooltip" data-placement="top" title="HTTP Status">${http_status}</span>`;
@@ -2367,7 +2369,7 @@ function get_http_badge(http_status){
 }
 
 
-function get_and_render_cve_details(cve_id){
+function get_and_render_cve_details(cve_id) {
 	var api_url = `/api/tools/cve_details/?cve_id=${cve_id}&format=json`;
 	Swal.fire({
 		title: 'Fetching CVE Details...'
@@ -2380,7 +2382,7 @@ function get_and_render_cve_details(cve_id){
 			"X-CSRFToken": getCookie("csrftoken"),
 			"Content-Type": "application/json"
 		},
-	}).then(response => response.json()).then(function(response) {
+	}).then(response => response.json()).then(function (response) {
 		console.log(response);
 		swal.close();
 		if (response.status) {
@@ -2410,7 +2412,7 @@ function get_and_render_cve_details(cve_id){
 				<div class="col-sm-9">
 				<div class="tab-content pt-0">`;
 
-				content += `
+			content += `
 				<div class="tab-pane fade active show" id="v-pills-cve-details" role="tabpanel" aria-labelledby="v-pills-cve-details-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
 					<h4 class="header-title">${cve_id}</h4>
 					<div class="alert alert-warning" role="alert">
@@ -2425,65 +2427,65 @@ function get_and_render_cve_details(cve_id){
 						</tr>
 						<tr>
 							<td>CVSS Score</td>
-							<td><span class="badge badge-soft-${cvss_score_badge}">${response.result.cvss ? response.result.cvss: "-"}</span></td>
+							<td><span class="badge badge-soft-${cvss_score_badge}">${response.result.cvss ? response.result.cvss : "-"}</span></td>
 						</tr>
 						<tr>
 							<td>Confidentiality Impact</td>
-							<td>${response.result.impact.confidentiality ? response.result.impact.confidentiality: "N/A"}</td>
+							<td>${response.result.impact.confidentiality ? response.result.impact.confidentiality : "N/A"}</td>
 						</tr>
 						<tr>
 							<td>Integrity Impact</td>
-							<td>${response.result.impact.integrity ? response.result.impact.integrity: "N/A"}</td>
+							<td>${response.result.impact.integrity ? response.result.impact.integrity : "N/A"}</td>
 						</tr>
 						<tr>
 							<td>Availability Impact</td>
-							<td>${response.result.impact.availability ? response.result.impact.availability: "N/A"}</td>
+							<td>${response.result.impact.availability ? response.result.impact.availability : "N/A"}</td>
 						</tr>
 						<tr>
 							<td>Access Complexity</td>
-							<td>${response.result.access.complexity ? response.result.access.complexity: "N/A"}</td>
+							<td>${response.result.access.complexity ? response.result.access.complexity : "N/A"}</td>
 						</tr>
 						<tr>
 							<td>Authentication</td>
-							<td>${response.result.access.authentication ? response.result.access.authentication: "N/A"}</td>
+							<td>${response.result.access.authentication ? response.result.access.authentication : "N/A"}</td>
 						</tr>
 						<tr>
 							<td>CWE ID</td>
-							<td><span class="badge badge-outline-danger">${response.result.cwe ? response.result.cwe: "N/A"}</span></td>
+							<td><span class="badge badge-outline-danger">${response.result.cwe ? response.result.cwe : "N/A"}</span></td>
 						</tr>
 					</table>
 				</div>
 				`;
 
-				content += `<div class="tab-pane fade" id="v-pills-cve-references" role="tabpanel" aria-labelledby="v-pills-cve-references-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
+			content += `<div class="tab-pane fade" id="v-pills-cve-references" role="tabpanel" aria-labelledby="v-pills-cve-references-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
 				<ul>`;
 
-				for (var reference in response.result.references) {
-					content += `<li><a href="${response.result.references[reference]}" target="_blank">${response.result.references[reference]}</a></li>`;
-				}
+			for (var reference in response.result.references) {
+				content += `<li><a href="${response.result.references[reference]}" target="_blank">${response.result.references[reference]}</a></li>`;
+			}
 
-				content += `</ul></div>`;
+			content += `</ul></div>`;
 
 
-				content += `<div class="tab-pane fade" id="v-pills-affected-products" role="tabpanel" aria-labelledby="v-pills-affected-products-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
+			content += `<div class="tab-pane fade" id="v-pills-affected-products" role="tabpanel" aria-labelledby="v-pills-affected-products-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
 				<ul>`;
 
-				for (var prod in response.result.vulnerable_product) {
-					content += `<li>${response.result.vulnerable_product[prod]}</li>`;
-				}
+			for (var prod in response.result.vulnerable_product) {
+				content += `<li>${response.result.vulnerable_product[prod]}</li>`;
+			}
 
-				content += `</ul></div>`;
+			content += `</ul></div>`;
 
-				content += `<div class="tab-pane fade" id="v-pills-affected-versions" role="tabpanel" aria-labelledby="v-pills-affected-versions-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
+			content += `<div class="tab-pane fade" id="v-pills-affected-versions" role="tabpanel" aria-labelledby="v-pills-affected-versions-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
 				<ul>`;
 
-				for (var conf in response.result.vulnerable_configuration) {
-					content += `<li>${response.result.vulnerable_configuration[conf]['id']}</li>`;
-				}
+			for (var conf in response.result.vulnerable_configuration) {
+				content += `<li>${response.result.vulnerable_configuration[conf]['id']}</li>`;
+			}
 
-				content += `</ul></div>`;
+			content += `</ul></div>`;
 
-				content += `</div></div></div>`;
+			content += `</div></div></div>`;
 
 			$('#xl-modal-content').append(content);
 
@@ -2492,7 +2494,7 @@ function get_and_render_cve_details(cve_id){
 				selector: '[data-toggle=tooltip]'
 			});
 		}
-		else{
+		else {
 			swal.fire("Error!", response.message, "error", {
 				button: "Okay",
 			});
@@ -2501,7 +2503,7 @@ function get_and_render_cve_details(cve_id){
 }
 
 
-function get_most_vulnerable_target(slug=null, scan_id=null, target_id=null, ignore_info=false, limit=50){
+function get_most_vulnerable_target(slug = null, scan_id = null, target_id = null, ignore_info = false, limit = 50) {
 	$('#most_vulnerable_target_div').empty();
 	$('#most_vulnerable_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
 	var data = {};
@@ -2525,9 +2527,9 @@ function get_most_vulnerable_target(slug=null, scan_id=null, target_id=null, ign
 			"X-CSRFToken": getCookie("csrftoken"),
 			"Content-Type": 'application/json',
 		}
-	}).then(function(response) {
+	}).then(function (response) {
 		return response.json();
-	}).then(function(response) {
+	}).then(function (response) {
 		$('#most_vulnerable_spinner').empty();
 		if (response.status) {
 			$('#most_vulnerable_target_div').append(`
@@ -2561,7 +2563,7 @@ function get_most_vulnerable_target(slug=null, scan_id=null, target_id=null, ign
 				`);
 			}
 		}
-		else{
+		else {
 			$('#most_vulnerable_target_div').append(`
 				<div class="mt-4 alert alert-warning">
 				Could not find most vulnerable targets.
@@ -2573,7 +2575,7 @@ function get_most_vulnerable_target(slug=null, scan_id=null, target_id=null, ign
 }
 
 
-function get_most_common_vulnerability(slug=null, scan_id=null, target_id=null, ignore_info=false, limit=50){
+function get_most_common_vulnerability(slug = null, scan_id = null, target_id = null, ignore_info = false, limit = 50) {
 	$('#most_common_vuln_div').empty();
 	$('#most_common_vuln_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
 	var data = {};
@@ -2597,9 +2599,9 @@ function get_most_common_vulnerability(slug=null, scan_id=null, target_id=null, 
 			"X-CSRFToken": getCookie("csrftoken"),
 			"Content-Type": 'application/json',
 		}
-	}).then(function(response) {
+	}).then(function (response) {
 		return response.json();
-	}).then(function(response) {
+	}).then(function (response) {
 		$('#most_common_vuln_spinner').empty();
 		if (response.status) {
 			$('#most_common_vuln_div').append(`
@@ -2656,7 +2658,7 @@ function get_most_common_vulnerability(slug=null, scan_id=null, target_id=null, 
 				`);
 			}
 		}
-		else{
+		else {
 			$('#most_common_vuln_div').append(`
 				<div class="mt-4 alert alert-warning">
 				Could not find Most Common Vulnerabilities.
@@ -2668,48 +2670,48 @@ function get_most_common_vulnerability(slug=null, scan_id=null, target_id=null, 
 }
 
 
-function highlight_search(search_keyword, content){
+function highlight_search(search_keyword, content) {
 	// this function will send the highlighted text from search keyword
-	var reg = new RegExp('('+search_keyword+')', 'gi');
+	var reg = new RegExp('(' + search_keyword + ')', 'gi');
 	return content.replace(reg, '<mark>$1</mark>');
 }
 
 
 function validURL(str) {
 	// checks for valid http url
-	var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-		'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
-		'((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-		'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
-		'(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-		'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+	var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+		'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+		'((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+		'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+		'(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+		'(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
 	return !!pattern.test(str);
 }
 
 
 function shadeColor(color, percent) {
 	//https://stackoverflow.com/a/13532993
-	var R = parseInt(color.substring(1,3),16);
-	var G = parseInt(color.substring(3,5),16);
-	var B = parseInt(color.substring(5,7),16);
+	var R = parseInt(color.substring(1, 3), 16);
+	var G = parseInt(color.substring(3, 5), 16);
+	var B = parseInt(color.substring(5, 7), 16);
 
 	R = parseInt(R * (100 + percent) / 100);
 	G = parseInt(G * (100 + percent) / 100);
 	B = parseInt(B * (100 + percent) / 100);
 
-	R = (R<255)?R:255;
-	G = (G<255)?G:255;
-	B = (B<255)?B:255;
+	R = (R < 255) ? R : 255;
+	G = (G < 255) ? G : 255;
+	B = (B < 255) ? B : 255;
 
-	var RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
-	var GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
-	var BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
+	var RR = ((R.toString(16).length == 1) ? "0" + R.toString(16) : R.toString(16));
+	var GG = ((G.toString(16).length == 1) ? "0" + G.toString(16) : G.toString(16));
+	var BB = ((B.toString(16).length == 1) ? "0" + B.toString(16) : B.toString(16));
 
-	return "#"+RR+GG+BB;
+	return "#" + RR + GG + BB;
 }
 
 
-function add_project_modal(){
+function add_project_modal() {
 	Swal.fire({
 		title: 'Enter the project name',
 		input: 'text',
@@ -2733,26 +2735,26 @@ function add_project_modal(){
 						`Duplicate project name, choose another project name!`
 					)
 				})
-			},
-			allowOutsideClick: () => !Swal.isLoading()
-		}).then((result) => {
-			console.log(result);
-			if (result.isConfirmed) {
-				Swal.fire({
-					title: `${result.value.project_name} is created.`,
-					onClose: reloadPage
-				})
-			}
-		});
+		},
+		allowOutsideClick: () => !Swal.isLoading()
+	}).then((result) => {
+		console.log(result);
+		if (result.isConfirmed) {
+			Swal.fire({
+				title: `${result.value.project_name} is created.`,
+				onClose: reloadPage
+			})
+		}
+	});
 }
 
 
-function reloadPage(){
+function reloadPage() {
 	location.reload();
 }
 
 
-function render_vuln_offcanvas(vuln){
+function render_vuln_offcanvas(vuln) {
 	$('#offcanvas').addClass('offcanvas-size-lg');
 	console.log(vuln);
 	var default_color = 'primary';
@@ -2798,7 +2800,7 @@ function render_vuln_offcanvas(vuln){
 	body += `<p><b>Severity: </b>${vuln.severity}<br><b>Type: </b>${vuln.type.toUpperCase()}<br><b>Source: </b> ${vuln.source.toUpperCase()}</p>`;
 
 	if (vuln.description) {
-		description = vuln.description.replace(new RegExp('\r?\n','g'), '<br />');
+		description = vuln.description.replace(new RegExp('\r?\n', 'g'), '<br />');
 		body += `<div class="accordion custom-accordion mt-2">
 		<h5 class="m-0 position-relative">
 		<a class="custom-accordion-title text-reset d-block"
@@ -2815,7 +2817,7 @@ function render_vuln_offcanvas(vuln){
 	}
 
 	if (vuln.impact) {
-		impact = vuln.impact.replace(new RegExp('\r?\n','g'), '<br />');
+		impact = vuln.impact.replace(new RegExp('\r?\n', 'g'), '<br />');
 		body += `<div class="accordion custom-accordion mt-2">
 		<h5 class="m-0 position-relative">
 		<a class="custom-accordion-title text-reset d-block"
@@ -2832,7 +2834,7 @@ function render_vuln_offcanvas(vuln){
 	}
 
 	if (vuln.remediation) {
-		remediation = vuln.remediation.replace(new RegExp('\r?\n','g'), '<br />');
+		remediation = vuln.remediation.replace(new RegExp('\r?\n', 'g'), '<br />');
 		body += `<div class="accordion custom-accordion mt-2">
 		<h5 class="m-0 position-relative">
 		<a class="custom-accordion-title text-reset d-block"
@@ -2871,7 +2873,7 @@ function render_vuln_offcanvas(vuln){
 			body += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
 		});
 
-	body += `</td>
+		body += `</td>
 		</tr>`
 	}
 
@@ -2886,7 +2888,7 @@ function render_vuln_offcanvas(vuln){
 			body += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
 		});
 
-	body += `</td>
+		body += `</td>
 		</tr>`
 	}
 
@@ -2999,10 +3001,10 @@ function render_vuln_offcanvas(vuln){
 	var http_request = vuln.request ? vuln.request : '';
 	var http_response = vuln.response ? vuln.response : '';
 
-	http_request = http_request.replace(new RegExp('\r?\n','g'), '<br />');
+	http_request = http_request.replace(new RegExp('\r?\n', 'g'), '<br />');
 	http_response = htmlEncode(http_response);
 
-	http_response = http_response.replace(new RegExp('&#13;&#10;','g'), '<br />');
+	http_response = http_response.replace(new RegExp('&#13;&#10;', 'g'), '<br />');
 
 	body += `<div class="accordion custom-accordion mt-2">
 	<h5 class="m-0 position-relative">
@@ -3066,7 +3068,7 @@ function render_vuln_offcanvas(vuln){
 }
 
 
-function showSwalLoader(title, text){
+function showSwalLoader(title, text) {
 	Swal.fire({
 		title: title,
 		text: text,
@@ -3080,15 +3082,15 @@ function showSwalLoader(title, text){
 	});
 }
 
-async function send_gpt_api_request(vuln_id){
+async function send_gpt_api_request(vuln_id) {
 	const api = "/api/tools/gpt_vulnerability_report/?format=json&id=" + vuln_id;
 	try {
 		const response = await fetch(api, {
-				method: 'GET',
-				credentials: "same-origin",
-				headers: {
-					"X-CSRFToken": getCookie("csrftoken")
-				}
+			method: 'GET',
+			credentials: "same-origin",
+			headers: {
+				"X-CSRFToken": getCookie("csrftoken")
+			}
 		});
 		if (!response.ok) {
 			throw new Error('Request failed');
@@ -3112,7 +3114,7 @@ async function fetch_gpt_vuln_details(id, title) {
 		if (data.status) {
 			render_gpt_vuln_modal(data, title);
 		}
-		else{
+		else {
 			Swal.close();
 			Swal.fire({
 				icon: 'error',
@@ -3132,7 +3134,7 @@ async function fetch_gpt_vuln_details(id, title) {
 }
 
 
-function render_gpt_vuln_modal(data, title){
+function render_gpt_vuln_modal(data, title) {
 	$('#modal-title').empty();
 	$('#modal-content').empty();
 	$('#modal-footer').empty();
@@ -3160,43 +3162,43 @@ function render_gpt_vuln_modal(data, title){
 }
 
 
-function get_datatable_col_index(lookup, cols){
+function get_datatable_col_index(lookup, cols) {
 	// this function will be used to return index of lookup string and cols are datatables cols
 	return cols.findIndex(column => column.data === lookup);
 }
 
 
-function endpoint_datatable_col_visibility(endpoint_table){
-	if(!$('#end_http_status_filter_checkbox').is(":checked")){
+function endpoint_datatable_col_visibility(endpoint_table) {
+	if (!$('#end_http_status_filter_checkbox').is(":checked")) {
 		endpoint_table.column(2).visible(false);
 	}
-	if(!$('#end_page_title_filter_checkbox').is(":checked")){
+	if (!$('#end_page_title_filter_checkbox').is(":checked")) {
 		endpoint_table.column(3).visible(false);
 	}
-	if(!$('#end_tags_filter_checkbox').is(":checked")){
+	if (!$('#end_tags_filter_checkbox').is(":checked")) {
 		endpoint_table.column(4).visible(false);
 	}
-	if(!$('#end_content_type_filter_checkbox').is(":checked")){
+	if (!$('#end_content_type_filter_checkbox').is(":checked")) {
 		endpoint_table.column(5).visible(false);
 	}
-	if(!$('#end_content_length_filter_checkbox').is(":checked")){
+	if (!$('#end_content_length_filter_checkbox').is(":checked")) {
 		endpoint_table.column(6).visible(false);
 	}
-	if(!$('#end_response_time_filter_checkbox').is(":checked")){
+	if (!$('#end_response_time_filter_checkbox').is(":checked")) {
 		endpoint_table.column(9).visible(false);
 	}
 }
 
 
-async function send_gpt__attack_surface_api_request(subdomain_id){
+async function send_gpt__attack_surface_api_request(subdomain_id) {
 	const api = `/api/tools/gpt_get_possible_attacks/?format=json&subdomain_id=${subdomain_id}`;
 	try {
 		const response = await fetch(api, {
-				method: 'GET',
-				credentials: "same-origin",
-				headers: {
-					"X-CSRFToken": getCookie("csrftoken")
-				}
+			method: 'GET',
+			credentials: "same-origin",
+			headers: {
+				"X-CSRFToken": getCookie("csrftoken")
+			}
 		});
 		if (!response.ok) {
 			throw new Error('Request failed');
@@ -3209,7 +3211,7 @@ async function send_gpt__attack_surface_api_request(subdomain_id){
 }
 
 
-async function show_attack_surface_modal(id){
+async function show_attack_surface_modal(id) {
 	var loader_title = "Loading...";
 	var text = 'Please wait while the GPT is generating attack surface.'
 	try {
@@ -3219,10 +3221,10 @@ async function show_attack_surface_modal(id){
 		if (data.status) {
 			$('#modal_title').html(`Attack Surface Suggestion for ${data.subdomain_name} (BETA)`);
 			$('#modal-content').empty();
-			$('#modal-content').append(data.description.replace(new RegExp('\r?\n','g'), '<br />'));
+			$('#modal-content').append(data.description.replace(new RegExp('\r?\n', 'g'), '<br />'));
 			$('#modal_dialog').modal('show');
 		}
-		else{
+		else {
 			Swal.close();
 			Swal.fire({
 				icon: 'error',
