@@ -44,6 +44,20 @@ then
   wget https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/deepmagic.com-prefixes-top50000.txt -O /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt
 fi
 
+# check if default wordlist for resolvers exists
+if [ ! -f /usr/src/wordlist/resolvers.txt ];
+then
+  echo "Downloading Resolvers Wordlist"
+  wget https://raw.githubusercontent.com/trickest/resolvers/main/resolvers.txt -O /usr/src/wordlist/resolvers.txt
+fi
+
+# check if default wordlist for all exists
+if [ ! -f /usr/src/wordlist/all.txt ];
+then
+  echo "Downloading all Wordlist"
+  wget https://gist.githubusercontent.com/jhaddix/f64c97d0863a78454e44c2f7119c2a6a/raw/96f4e51d96b2203f19f6381c8c545b278eaa0837/all.txt -O /usr/src/wordlist/all.txt
+fi
+
 # clone Sublist3r
 if [ ! -d "/usr/src/github/Sublist3r" ]
 then
