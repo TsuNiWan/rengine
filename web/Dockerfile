@@ -18,12 +18,6 @@ ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
 
 # Install Python
 RUN apt update -y && \
-    <<<<<<< HEAD
-    apt install -y software-properties-common && \
-    add-apt-repository -y ppa:deadsnakes/ppa && \
-=======
->>>>>>> upstream/2.0_release
-    apt update -y && \
     apt install -y \
     python3.10 \
     python3-dev \
@@ -50,7 +44,7 @@ RUN apt update -y && \
     wget \
     curl \
     unzip \
-    whatweb
+    whatweb \
     python3-netaddr \
     software-properties-common
 
