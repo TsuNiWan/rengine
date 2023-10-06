@@ -2,7 +2,6 @@ web/custom_engines*
 Pipfile*
 resume.cfg
 *.txt
-*.sh
 *.log
 *.pot
 *.pyc
@@ -60,3 +59,6 @@ secret
 /secrets
 
 get-docker.sh
+
+# Environment variables
+.env

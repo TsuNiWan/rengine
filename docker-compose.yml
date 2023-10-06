@@ -45,6 +45,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
+      - MAX_CONCURRENCY=${MAX_CONCURRENCY}
+      - MIN_CONCURRENCY=${MIN_CONCURRENCY}
     depends_on:
       - db
       - redis
@@ -138,6 +140,7 @@ services:
       - scan_results:/usr/src/scan_results
     networks:
       - rengine_network
+
 
 networks:
   rengine_network:

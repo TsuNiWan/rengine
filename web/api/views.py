@@ -280,7 +280,6 @@ class FetchMostCommonVulnerability(APIView):
 		data = req.data
 
 		limit = data.get('limit', 20)
-		project_slug = data.get('slug')
 		scan_history_id = data.get('scan_history_id')
 		target_id = data.get('target_id')
 		is_ignore_info = data.get('ignore_info', False)
@@ -288,69 +287,83 @@ class FetchMostCommonVulnerability(APIView):
 		response = {}
 		response['status'] = False
 
-		if project_slug:
-			project = Project.objects.get(slug=project_slug)
-			vulnerabilities = Vulnerability.objects.filter(target_domain__project=project)
-		else:
-			vulnerabilities = Vulnerability.objects.all()
-
-
 		if scan_history_id:
-			vuln_query = (
-				vulnerabilities
-				.filter(scan_history__id=scan_history_id)
-				.values("name", "severity")
-			)
 			if is_ignore_info:
-				most_common_vulnerabilities = (
-					vuln_query
-					.exclude(severity=0)
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					scan_history__id=scan_history_id
+				).values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
 			else:
-				most_common_vulnerabilities = (
-					vuln_query
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					scan_history__id=scan_history_id
+				).values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
 
 		elif target_id:
-			vuln_query = vulnerabilities.filter(target_domain__id=target_id).values("name", "severity")
 			if is_ignore_info:
-				most_common_vulnerabilities = (
-					vuln_query
-					.exclude(severity=0)
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					target_domain__id=target_id
+				).values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
 			else:
-				most_common_vulnerabilities = (
-					vuln_query
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					target_domain__id=target_id
+				).values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
 
 		else:
-			vuln_query = vulnerabilities.values("name", "severity")
 			if is_ignore_info:
-				most_common_vulnerabilities = (
-					vuln_query.exclude(severity=0)
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+				most_common_vulnerabilities = Vulnerability.objects.values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
 			else:
-				most_common_vulnerabilities = (
-					vuln_query.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+				most_common_vulnerabilities = Vulnerability.objects.values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
 
 
-		most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
+			most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
 
-		if most_common_vulnerabilities:
-			response['status'] = True
-			response['result'] = most_common_vulnerabilities
+			if most_common_vulnerabilities:
+				response['status'] = True
+				response['result'] = most_common_vulnerabilities
+		except Exception as e:
+			print(str(e))
+			response = {}
 
 		return Response(response)
 
@@ -542,14 +555,24 @@ class AddTarget(APIView):
 		data = req.data
 		h1_team_handle = data.get('h1_team_handle')
 		description = data.get('description')
-		domain_name = data.get('domain_name')
 
-		# Validate domain name
-		if not validators.domain(domain_name):
-			return Response({'status': False, 'message': 'Invalid domain or IP'})
+		if not target_name:
+			return Response({'status': False, 'message': 'domain_name missing!'})
 
-		# Create domain object in DB
-		domain, _ = Domain.objets.get_or_create(name=domain_name)
+		# validate if target_name is a valid domain_name
+		if not validators.domain(target_name):
+			return Response({'status': False, 'message': 'Invalid Domain or IP'})
+
+		if Domain.objects.filter(name=target_name).exists():
+			return Response({
+				'status': False,
+				'message': 'Target already exists!',
+				'domain_id': Domain.objects.get(name=target_name).id
+			})
+
+		domain = Domain()
+		domain.name = target_name
+		domain.insert_date = timezone.now()
 		domain.h1_team_handle = h1_team_handle
 		domain.description = description
 		if not domain.insert_date:
@@ -1345,7 +1368,13 @@ class ListDorks(APIView):
 		if scan_id and type:
 			dork = dork.filter(type=type)
 		serializer = DorkSerializer(dork, many=True)
-		return Response({"dorks": serializer.data})
+		grouped_res = {}
+		for item in serializer.data:
+			item_type = item['type']
+			if item_type not in grouped_res:
+				grouped_res[item_type] = []
+			grouped_res[item_type].append(item)
+		return Response({"dorks": grouped_res})
 
 
 class ListEmployees(APIView):

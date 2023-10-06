@@ -1,3 +1,7 @@
+function getCurrentProjectSlug() {
+	return document.querySelector('input[name="current_project"]').value;
+}
+
 function checkall(clickchk, relChkbox) {
 	var checker = $('#' + clickchk);
 	var multichk = $('.' + relChkbox);
@@ -632,10 +636,10 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 function get_interesting_endpoints(project, target_id, scan_history_id) {
 	var non_orderable_targets = [];
 	if (target_id) {
-		url = `/api/listInterestingEndpoints/?project={project}&target_id=${target_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project=${project}&target_id=${target_id}&format=datatables`;
 		// non_orderable_targets = [0, 1, 2, 3];
 	} else if (scan_history_id) {
-		url = `/api/listInterestingEndpoints/?project={project}&scan_id=${scan_history_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project=${project}&scan_id=${scan_history_id}&format=datatables`;
 		// non_orderable_targets = [0, 1, 2, 3];
 	}
 	$('#interesting_endpoints').DataTable({
@@ -1514,7 +1518,6 @@ function get_domain_whois(domain_name, show_add_target_btn = false) {
 }
 
 function display_whois_on_modal(response, show_add_target_btn = false) {
-	console.log(response);
 	// this function will display whois data on modal, should be followed after get_domain_whois()
 	$('#modal_dialog').modal('show');
 	$('#modal-content').empty();
@@ -1879,13 +1882,15 @@ function add_quick_target() {
 
 
 function add_target(domain_name, h1_handle = null, description = null) {
+	var current_slug = getCurrentProjectSlug();
 	// this function will add domain_name as target
 	console.log('Adding new target ' + domain_name)
 	const add_api = '/api/add/target/?format=json';
 	const data = {
 		'domain_name': domain_name,
 		'h1_team_handle': h1_handle,
-		'description': description
+		'description': description,
+		'slug': current_slug
 	};
 	swal.queue([{
 		title: 'Add Target',
@@ -1919,7 +1924,7 @@ function add_target(domain_name, h1_handle = null, description = null) {
 						padding: '2em',
 						showLoaderOnConfirm: true,
 						preConfirm: function () {
-							window.location = `/scan/start/${data.domain_id}`;
+							window.location = `/scan/${current_slug}/start/${data.domain_id}`;
 						}
 					}]);
 				} else {
@@ -1964,7 +1969,6 @@ function loadSubscanHistoryWidget(scan_history_id = null, domain_id = null) {
 	}).then(function (response) {
 		return response.json();
 	}).then(function (data) {
-		console.log(data);
 		$('#subscan_history_widget').empty();
 		if (data['status']) {
 			$('#sub_scan_history_count').append(`
@@ -3241,4 +3245,16 @@ async function show_attack_surface_modal(id) {
 			text: 'Something went wrong!',
 		});
 	}
+}
+
+
+function convertToCamelCase(inputString) {
+	// Converts camel case string to title
+	// Split the input string by underscores
+	const words = inputString.split('_');
+
+	// Capitalize the first letter of each word and join them with a space
+	const camelCaseString = words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+	return camelCaseString;
 }

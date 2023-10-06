@@ -1,5 +1,5 @@
 # Base image
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Labels and Credits
 LABEL \
@@ -18,8 +18,11 @@ ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
 
 # Install Python
 RUN apt update -y && \
+    <<<<<<< HEAD
     apt install -y software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
+=======
+>>>>>>> upstream/2.0_release
     apt update -y && \
     apt install -y \
     python3.10 \
@@ -48,6 +51,10 @@ RUN apt update -y && \
     curl \
     unzip \
     whatweb
+    python3-netaddr \
+    software-properties-common
+
+RUN add-apt-repository ppa:mozillateam/ppa
 
 # Download and install go 1.20
 RUN wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
@@ -117,6 +124,7 @@ RUN mv findomain /usr/bin/findomain
 # Install feroxbuster
 RUN curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/main/install-nix.sh | bash -s /usr/bin
 
+RUN go install -v github.com/sa7mon/s3scanner@latest
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update
@@ -142,6 +150,14 @@ RUN mv waymore /usr/local
 # Install RustScan
 COPY ./package/rustscan /usr/bin/rustscan
 RUN chmod +x /usr/bin/rustscan
+
+# install eyewitness
+
+RUN python3 -m pip install fuzzywuzzy \
+    selenium==4.9.1 \
+    python-Levenshtein \
+    pyvirtualdisplay \
+    netaddr
 
 # Copy source code
 COPY . /usr/src/app/

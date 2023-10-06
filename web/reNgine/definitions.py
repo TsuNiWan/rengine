@@ -50,12 +50,13 @@ NAABU_RATE = 'rate'
 NUCLEI_CUSTOM_TEMPLATE = 'custom_templates'
 NUCLEI_TAGS = 'tags'
 NUCLEI_TEMPLATE = 'templates'
-NUCLEI_SEVERITY = 'severity'
+NUCLEI_SEVERITY = 'severities'
 NUCLEI_CONCURRENCY = 'concurrency'
 OSINT = 'osint'
 OSINT_DOCUMENTS_LIMIT = 'documents_limit'
 OSINT_DISCOVER = 'discover'
-OSINT_DORK = 'dork'
+OSINT_DORK = 'dorks'
+OSINT_CUSTOM_DORK = 'custom_dorks'
 PORT = 'port'
 PORTS = 'ports'
 RECURSIVE = 'recursive'
@@ -475,3 +476,7 @@ ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
     Please provide a detailed list of these attack types and their underlying technical rationales on every attacks you suggested.
     Also suggest if any CVE ID, known exploits, existing vulnerabilities, any news articles URL related to the information provided to you.
 """
+
+
+# OSINT GooFuzz Path
+GOFUZZ_EXEC_PATH = '/usr/src/github/goofuzz/GooFuzz'
